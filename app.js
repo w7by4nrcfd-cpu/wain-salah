@@ -72,8 +72,12 @@ function computeDay() {
   const h = hijri(n), t = prayerTimes(y, m, d, place.lat, place.lng, h.ramadan);
   const tm = new Date(Date.UTC(y, m - 1, d + 1));
   const tt = prayerTimes(tm.getUTCFullYear(), tm.getUTCMonth() + 1, tm.getUTCDate(), place.lat, place.lng, hijri(tm).ramadan);
+  const ym = new Date(Date.UTC(y, m - 1, d - 1));
+  const ty = prayerTimes(ym.getUTCFullYear(), ym.getUTCMonth() + 1, ym.getUTCDate(), place.lat, place.lng, false);
   day = {
-    key: `${y}-${m}-${d}-${place.lat}-${place.lng}`, t, fajrTomorrow: tt[0] + 24, hijri: h.text,
+    key: `${y}-${m}-${d}-${place.lat}-${place.lng}`, t, fajrTomorrow: tt[0] + 24, maghribYesterday: ty[4] - 24,
+    hijri: h.text, ramadan: h.ramadan || !!window.__forceRamadan, friday: n.getUTCDay() === 5 || !!window.__forceFriday,
+    hijriDay: +new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { day: "numeric", timeZone: "UTC" }).format(n),
     greg: new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-latn", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(n)
   };
 }
@@ -87,7 +91,8 @@ function renderPrayer() {
   const idx = ni === -1 ? 0 : ni, target = ni === -1 ? day.fajrTomorrow : day.t[ni];
   const left = Math.max(0, Math.round((target - now) * 3600));
   $("countdown").textContent = [left / 3600 | 0, (left % 3600) / 60 | 0, left % 60].map(v => String(v).padStart(2, "0")).join(":");
-  $("nextName").textContent = NAMES[idx];
+  const names = NAMES.slice(); if (day.friday) names[2] = "الجمعة";
+  $("nextName").textContent = names[idx];
   $("nextAdhan").textContent = hm(target);
   $("nextIqama").textContent = "الإقامة تقريباً " + hm(target + off[OFF_IDX[idx]] / 60);
   $("hijri").textContent = day.hijri; $("greg").textContent = day.greg;
@@ -96,11 +101,90 @@ function renderPrayer() {
   day.t.forEach((x, i) => {
     const cls = ni === -1 || i < ni ? " past" : i === ni ? " next" : "";
     const iq = OFF_IDX[i] === null ? "—" : hm(x + off[OFF_IDX[i]] / 60);
-    html += `<div class="row${cls}"><span class="p">${NAMES[i]}</span><span class="t">${hm(x)}</span><span class="t q">${iq}</span></div>`;
+    html += `<div class="row${cls}"><span class="p">${names[i]}</span><span class="t">${hm(x)}</span><span class="t q">${iq}</span></div>`;
   });
   if (ni === -1) html += `<div class="row next"><span class="p">فجر الغد</span><span class="t">${hm(day.fajrTomorrow)}</span><span class="t q">${hm(day.fajrTomorrow + off[0] / 60)}</span></div>`;
   if ($("table").dataset.h !== html) { $("table").innerHTML = html; $("table").dataset.h = html; }
+  renderExtra(now); renderSpecial(now); renderDhikrTitle(now);
 }
+
+const clock = s => [s / 3600 | 0, (s % 3600) / 60 | 0, s % 60].map(v => String(v).padStart(2, "0")).join(":");
+const setHTML = (el, html) => { if (el.dataset.h !== html) { el.innerHTML = html; el.dataset.h = html; } };
+
+/* Duha, middle of the night, last third (night = Maghrib to the next Fajr) */
+function renderExtra(now) {
+  const t = day.t;
+  const [m, f] = now < t[0] ? [day.maghribYesterday, t[0]] : [t[4], day.fajrTomorrow];
+  const night = f - m;
+  const items = [
+    ["الضحى", "يبدأ", t[1] + 15 / 60, "بعد الشروق بربع ساعة"],
+    ["منتصف الليل", "", m + night / 2, "آخر وقت العشاء المختار"],
+    ["الثلث الأخير", "يبدأ", m + night * 2 / 3, "أفضل وقت لقيام الليل"]
+  ];
+  setHTML($("extra"), items.map(([n, pre, x, sub]) =>
+    `<div class="ex"><span class="ex-n">${n}</span><span class="ex-t">${pre ? pre + " " : ""}${hm(x)}</span><span class="ex-s">${sub}</span></div>`).join(""));
+}
+
+/* Ramadan and Friday cards */
+function renderSpecial(now) {
+  const t = day.t; let html = "";
+  if (day.ramadan) {
+    let label, target;
+    if (now < t[0]) { label = "باقي على الإمساك"; target = t[0]; }
+    else if (now < t[4]) { label = "باقي على الإفطار"; target = t[4]; }
+    else { label = "باقي على الإمساك"; target = day.fajrTomorrow; }
+    const left = Math.max(0, Math.round((target - now) * 3600));
+    html += `<div class="sp ramadan"><div class="sp-top"><span class="sp-tag">رمضان</span><span class="sp-day">اليوم ${day.hijriDay}</span></div>
+      <div class="sp-lbl">${label}</div><div class="sp-count">${clock(left)}</div>
+      <div class="sp-row"><span>الإمساك ${hm(now >= t[4] ? day.fajrTomorrow : t[0])}</span><span>الإفطار ${hm(t[4])}</span></div></div>`;
+  }
+  if (day.friday) {
+    const left = Math.max(0, Math.round((t[2] - now) * 3600));
+    html += `<div class="sp friday"><div class="sp-top"><span class="sp-tag">يوم الجمعة</span>${now < t[2] ? `<span class="sp-day">الأذان بعد ${clock(left)}</span>` : ""}</div>
+      <ul class="sunan"><li>قراءة سورة الكهف</li><li>الإكثار من الصلاة على النبي صلى الله عليه وسلم</li><li>الاغتسال والتطيب والتبكير إلى المسجد</li><li>تحرّي ساعة الإجابة آخر ساعة بعد العصر</li></ul></div>`;
+  }
+  setHTML($("special"), html);
+}
+
+/* ===== adhkar after prayer (Hisn al-Muslim) ===== */
+const DHIKR = [
+  { t: "أستغفر الله", n: 3 },
+  { t: "اللهم أنت السلام ومنك السلام، تباركت يا ذا الجلال والإكرام", n: 1 },
+  { t: "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير، اللهم لا مانع لما أعطيت، ولا معطي لما منعت، ولا ينفع ذا الجد منك الجد", n: 1 },
+  { t: "سبحان الله", n: 33 },
+  { t: "الحمد لله", n: 33 },
+  { t: "الله أكبر", n: 33 },
+  { t: "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير", n: 1, note: "تمام المئة" },
+  { t: "قراءة آية الكرسي", n: 1 },
+  { t: "قراءة سورة الإخلاص والفلق والناس", n: 1, n3: 3, note: "ثلاث مرات بعد الفجر والمغرب" },
+  { t: "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، يحيي ويميت، وهو على كل شيء قدير", n: 10, only: "fm", note: "بعد الفجر والمغرب" }
+];
+let dhikrCounts = DHIKR.map(() => 0), dhikrFM = false;
+function renderDhikrTitle(now) {
+  const t = day.t;
+  const last = [0, 2, 3, 4, 5].filter(i => t[i] <= now).pop();
+  const recent = last != null && now - t[last] < 1;
+  const fm = last === 0 || last === 4;
+  const names = NAMES.slice(); if (day.friday) names[2] = "الجمعة";
+  const txt = recent ? `أذكار ما بعد صلاة ${names[last]}. اضغط على الذكر لتعدّه.` : "اضغط على الذكر لتعدّه.";
+  if ($("dhikrFor").textContent !== txt) $("dhikrFor").textContent = txt;
+  if (fm !== dhikrFM) { dhikrFM = fm; renderDhikr(); }
+}
+function renderDhikr() {
+  const list = $("dhikr"); list.innerHTML = "";
+  DHIKR.forEach((d, i) => {
+    if (d.only === "fm" && !dhikrFM) return;
+    const goal = dhikrFM && d.n3 ? d.n3 : d.n, c = Math.min(dhikrCounts[i], goal);
+    const li = document.createElement("li"), b = document.createElement("button");
+    b.type = "button"; b.className = "dk" + (c >= goal ? " done" : "");
+    b.innerHTML = `<span class="dk-t"></span><span class="dk-c">${c >= goal ? "✓" : c + " / " + goal}</span>`;
+    b.querySelector(".dk-t").textContent = d.t + (d.note ? ` (${d.note})` : "");
+    b.style.setProperty("--p", (c / goal * 100) + "%");
+    b.onclick = () => { if (dhikrCounts[i] < goal) { dhikrCounts[i]++; if (navigator.vibrate) navigator.vibrate(dhikrCounts[i] === goal ? 40 : 8); renderDhikr(); } };
+    li.appendChild(b); list.appendChild(li);
+  });
+}
+$("dhikrReset").onclick = () => { dhikrCounts = DHIKR.map(() => 0); renderDhikr(); };
 
 /* ===== location ===== */
 function renderPlace() {
@@ -230,7 +314,7 @@ const standalone = window.matchMedia("(display-mode: standalone)").matches || na
 if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !standalone && !store.get("hideInstall", false)) $("installHint").hidden = false;
 $("installClose").onclick = () => { $("installHint").hidden = true; store.set("hideInstall", true); };
 
-buildTicks(); renderPlace(); renderPrayer();
+buildTicks(); renderPlace(); renderPrayer(); renderDhikr();
 setInterval(renderPrayer, 1000);
 // Ask for the real location straight away; until then times are only a placeholder
 locate();

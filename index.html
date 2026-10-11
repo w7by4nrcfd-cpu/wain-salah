@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;600;700&family=Readex+Pro:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
 <div class="wrap">
@@ -46,6 +46,8 @@
     <div class="iq" id="nextIqama">الإقامة —</div>
   </div>
 
+  <div id="special"></div>
+
   <section>
     <h2>أقرب المساجد</h2>
     <div class="picker">
@@ -62,6 +64,18 @@
     <h2>مواقيت اليوم</h2>
     <div class="table" id="table"></div>
     <p class="note">حسب تقويم أم القرى. أوقات الإقامة تقريبية وقد تختلف من مسجد لآخر.</p>
+  </section>
+
+  <section>
+    <h2>أوقات أخرى</h2>
+    <div class="extra" id="extra"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>أذكار بعد الصلاة</h2><button class="link" id="dhikrReset" type="button">إعادة العد</button></div>
+    <p class="note" id="dhikrFor">اضغط على الذكر لتعدّه.</p>
+    <ol class="dhikr" id="dhikr"></ol>
+    <p class="note">المصدر: حصن المسلم.</p>
   </section>
 
   <section>
@@ -89,8 +103,8 @@
   </section>
 
 
-  <footer class="note">حدّد موقعك لتُضبط المواقيت والقبلة على مكانك بدقة · الإصدار 19</footer>
+  <footer class="note">حدّد موقعك لتُضبط المواقيت والقبلة على مكانك بدقة · الإصدار 20</footer>
 </div>
-<script src="app.js?v=19"></script>
+<script src="app.js?v=20"></script>
 </body>
 </html>
