@@ -95,13 +95,27 @@ function renderPrayer() {
   const now = n.getUTCHours() + n.getUTCMinutes() / 60 + n.getUTCSeconds() / 3600;
   const off = DEFAULT_OFF;
   const ni = day.t.findIndex((x, i) => i !== 1 && x > now);
-  const idx = ni === -1 ? 0 : ni, target = Math.ceil((ni === -1 ? day.fajrTomorrow : day.t[ni]) * 60 - 1e-9) / 60; // count down to the shown minute
-  const left = Math.max(0, Math.round((target - now) * 3600));
-  $("countdown").textContent = [left / 3600 | 0, (left % 3600) / 60 | 0, left % 60].map(v => String(v).padStart(2, "0")).join(":");
   const names = NAMES.slice(); if (day.friday) names[2] = "الجمعة";
-  $("nextName").textContent = names[idx];
-  $("nextAdhan").textContent = hm(target);
-  $("nextIqama").textContent = "الإقامة تقريباً " + hm(target + off[OFF_IDX[idx]] / 60);
+  const ceilMin = h => Math.ceil(h * 60 - 1e-9) / 60; // count to the minute that is shown
+  // Between a prayer's adhan and its iqama, keep showing that prayer and count down to the iqama
+  const cur = [0, 2, 3, 4, 5].filter(i => ceilMin(day.t[i]) <= now).pop();
+  const curIq = cur != null ? ceilMin(day.t[cur]) + off[OFF_IDX[cur]] / 60 : null;
+  if (cur != null && now < curIq) {
+    const left = Math.max(0, Math.round((curIq - now) * 3600));
+    $("heroLbl").textContent = "حان وقت الصلاة";
+    $("nextName").textContent = names[cur];
+    $("countdown").textContent = [left / 3600 | 0, (left % 3600) / 60 | 0, left % 60].map(v => String(v).padStart(2, "0")).join(":");
+    $("heroSub").textContent = "أُذِّن " + hm(day.t[cur]) + " · باقي على الإقامة";
+    $("nextIqama").textContent = "الإقامة تقريباً " + hm(curIq);
+  } else {
+    const idx = ni === -1 ? 0 : ni, target = ceilMin(ni === -1 ? day.fajrTomorrow : day.t[ni]);
+    const left = Math.max(0, Math.round((target - now) * 3600));
+    $("heroLbl").textContent = "الصلاة القادمة";
+    $("nextName").textContent = names[idx];
+    $("countdown").textContent = [left / 3600 | 0, (left % 3600) / 60 | 0, left % 60].map(v => String(v).padStart(2, "0")).join(":");
+    $("heroSub").textContent = "الأذان " + hm(target);
+    $("nextIqama").textContent = "الإقامة تقريباً " + hm(target + off[OFF_IDX[idx]] / 60);
+  }
   $("hijri").textContent = day.hijri; $("greg").textContent = day.greg;
 
   let html = '<div class="row head"><span>الصلاة</span><span class="t">الأذان</span><span class="t">الإقامة</span></div>';
