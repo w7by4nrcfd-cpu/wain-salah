@@ -97,16 +97,20 @@ function renderPrayer() {
   const ni = day.t.findIndex((x, i) => i !== 1 && x > now);
   const names = NAMES.slice(); if (day.friday) names[2] = "الجمعة";
   const ceilMin = h => Math.ceil(h * 60 - 1e-9) / 60; // count to the minute that is shown
-  // Between a prayer's adhan and its iqama, keep showing that prayer and count down to the iqama
+  // For 30 minutes after each adhan, show the time elapsed since it (counting up), then move to the next prayer
+  const clockOf = s => [s / 3600 | 0, (s % 3600) / 60 | 0, s % 60].map(v => String(v).padStart(2, "0")).join(":");
   const cur = [0, 2, 3, 4, 5].filter(i => ceilMin(day.t[i]) <= now).pop();
-  const curIq = cur != null ? ceilMin(day.t[cur]) + off[OFF_IDX[cur]] / 60 : null;
-  if (cur != null && now < curIq) {
-    const left = Math.max(0, Math.round((curIq - now) * 3600));
-    $("heroLbl").textContent = "حان وقت الصلاة";
+  const curAdhan = cur != null ? ceilMin(day.t[cur]) : null;
+  if (cur != null && now < curAdhan + .5) {
+    const since = Math.max(0, Math.floor((now - curAdhan) * 3600));
+    const iq = curAdhan + off[OFF_IDX[cur]] / 60;
+    $("heroLbl").textContent = `مضى على أذان ${names[cur]} ${Math.floor(since / 60)} دقيقة`;
     $("nextName").textContent = names[cur];
-    $("countdown").textContent = [left / 3600 | 0, (left % 3600) / 60 | 0, left % 60].map(v => String(v).padStart(2, "0")).join(":");
-    $("heroSub").textContent = "أُذِّن " + hm(day.t[cur]) + " · باقي على الإقامة";
-    $("nextIqama").textContent = "الإقامة تقريباً " + hm(curIq);
+    $("countdown").textContent = clockOf(since);
+    $("heroSub").textContent = "أُذِّن " + hm(day.t[cur]);
+    $("nextIqama").textContent = now < iq
+      ? "الإقامة تقريباً " + hm(iq) + " · بعد " + Math.ceil((iq - now) * 60) + " د"
+      : "أُقيمت الصلاة تقريباً " + hm(iq);
   } else {
     const idx = ni === -1 ? 0 : ni, target = ceilMin(ni === -1 ? day.fajrTomorrow : day.t[ni]);
     const left = Math.max(0, Math.round((target - now) * 3600));
