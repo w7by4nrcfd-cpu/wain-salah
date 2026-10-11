@@ -14,7 +14,7 @@ const OFF_IDX = [0, null, 1, 2, 3, 4];
 const FALLBACK = { name: "لم يُحدَّد بعد", lat: 21.4225, lng: 39.8262, approx: true };
 
 let place = store.get("place", FALLBACK);
-if (place.approx) place = FALLBACK; // never show a made-up town as the user's location
+if (place.approx || place.manual) place = FALLBACK; // never show a made-up town as the user's location
 let mine = store.get("mine", []);
 let selected = store.get("sel", null);
 let editing = selected;
@@ -168,37 +168,6 @@ async function placeName(lat, lng) {
 }
 
 
-/* ===== manual place search (any city or village in Saudi Arabia) ===== */
-async function searchPlace() {
-  const q = $("placeQ").value.trim(), box = $("placeResults");
-  if (!q) { $("placeQ").focus(); return; }
-  box.innerHTML = '<li class="note">جارٍ البحث…</li>';
-  try {
-    const list = await withTimeout(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=sa&limit=8&accept-language=ar&addressdetails=1&q=${encodeURIComponent(q)}`, 10000);
-    box.innerHTML = "";
-    if (!list.length) { box.innerHTML = '<li class="note">لم نجد هذا الاسم. جرّب كتابته بطريقة أخرى أو اسم أقرب مدينة.</li>'; return; }
-    list.forEach(r => {
-      const ad = r.address || {};
-      const name = r.name || r.display_name.split(",")[0];
-      const area = [ad.county || ad.state_district, ad.state].filter(Boolean).filter(x => x !== name).join("، ");
-      const li = document.createElement("li"), b = document.createElement("button");
-      b.type = "button"; b.className = "res";
-      b.innerHTML = '<b></b><span></span>';
-      b.querySelector("b").textContent = name; b.querySelector("span").textContent = area;
-      b.onclick = () => {
-        place = { name, lat: +r.lat, lng: +r.lon, manual: true };
-        store.set("place", place); store.set("located", false);
-        box.innerHTML = ""; $("placeQ").value = ""; setStatus("");
-        $("locateBtn").textContent = "حدّد موقعي";
-        day = null; renderPlace(); renderPrayer();
-      };
-      li.appendChild(b); box.appendChild(li);
-    });
-  } catch (e) { box.innerHTML = '<li class="note">تعذّر البحث، تحقق من الإنترنت.</li>'; }
-}
-$("placeGo").onclick = searchPlace;
-$("placeQ").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); searchPlace(); } });
-
 /* ===== Google Maps picker: choose what to search before leaving the site ===== */
 const KINDS = {
   mosque: { term: "مسجد", note: "المساجد حول موقعك." },
@@ -303,7 +272,7 @@ $("installClose").onclick = () => { $("installHint").hidden = true; store.set("h
 buildTicks(); renderPlace(); renderMine(); renderPrayer();
 setInterval(renderPrayer, 1000);
 // Ask for the real location straight away; until then times are only a placeholder
-if (!place.manual) locate();
+locate();
 if (place.approx) setStatus("اسمح بالوصول لموقعك حتى تُحسب المواقيت لمكانك.");
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
