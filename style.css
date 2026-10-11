@@ -161,3 +161,14 @@ footer{text-align:center}
 .mi-s{font-size:12px;color:var(--muted)}
 .menu-item[aria-current="true"]{background:var(--accent);color:var(--accent-ink)}
 .menu-item[aria-current="true"] .mi-s{color:var(--accent-ink);opacity:.8}
+
+/* chooser page */
+.choosing .view-body{display:none}
+.choosing .menu{position:static;box-shadow:none;border:0;background:transparent;padding:16px;gap:12px;max-width:520px;width:100%;margin:0 auto;overflow-y:auto}
+.choosing .menu-item{background:var(--surface);border:1px solid var(--line);padding:20px 18px;border-radius:18px}
+.choosing .menu-item>span:first-child{font-family:var(--display);font-size:20px}
+.choosing .menu-item[aria-current="true"]{background:var(--surface);color:var(--ink)}
+.choosing .menu-item[aria-current="true"] .mi-s{color:var(--muted);opacity:1}
+.menu-item.suggested{border-color:var(--accent)}
+.menu-item.suggested>span:first-child::after{content:"مقترح الآن";font-family:var(--body);font-size:11px;font-weight:600;margin-inline-start:10px;padding:2px 8px;border-radius:99px;background:var(--accent);color:var(--accent-ink);vertical-align:middle}
+.choosing .menu-btn{visibility:hidden}

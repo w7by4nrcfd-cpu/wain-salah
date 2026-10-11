@@ -282,22 +282,29 @@ function tapDhikr(i, b) {
   }
 }
 $("dhikrReset").onclick = () => { counts[tab] = []; renderDhikr(); };
+/* The adhkar screen opens on a chooser page; ☰ brings the chooser back */
 function showMenu(open) {
+  $("dhikrView").classList.toggle("choosing", open);
   $("dhikrMenu").hidden = !open;
   $("menuBtn").setAttribute("aria-expanded", open);
+  if (open) { $("dhikrTitle").textContent = "الأذكار"; $("dhikrMenu").scrollTop = 0; }
+  else if (tab) $("dhikrTitle").textContent = tab === "salah" ? "أذكار بعد الصلاة" : ADHKAR[tab].title;
 }
-$("menuBtn").onclick = () => showMenu($("dhikrMenu").hidden);
+$("menuBtn").onclick = () => showMenu($("dhikrMenu").hidden || !tab);
 document.querySelectorAll(".menu-item").forEach(b => b.onclick = () => setTab(b.dataset.tab));
-$("dhikrView").addEventListener("click", e => { if (!$("dhikrMenu").hidden && !e.target.closest("#dhikrMenu, #menuBtn")) showMenu(false); });
 
 /* Adhkar open as their own screen; the phone's back gesture closes it */
 function showDhikr(open) {
-  $("dhikrView").hidden = !open; if (!open) showMenu(false);
+  $("dhikrView").hidden = !open;
   document.body.style.overflow = open ? "hidden" : "";
 }
 $("openDhikr").onclick = () => {
-  const n = saNow(); setTab(suggestTab(n.getUTCHours() + n.getUTCMinutes() / 60));
-  history.pushState({ v: "dhikr" }, ""); showDhikr(true);
+  const n = saNow(), s = suggestTab(n.getUTCHours() + n.getUTCMinutes() / 60);
+  document.querySelectorAll(".menu-item").forEach(b => {
+    b.classList.toggle("suggested", b.dataset.tab === s);
+    b.setAttribute("aria-current", b.dataset.tab === tab);
+  });
+  history.pushState({ v: "dhikr" }, ""); showDhikr(true); showMenu(true);
 };
 $("closeDhikr").onclick = () => history.state && history.state.v === "dhikr" ? history.back() : showDhikr(false);
 window.addEventListener("popstate", () => showDhikr(history.state && history.state.v === "dhikr"));
