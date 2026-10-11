@@ -116,6 +116,7 @@ function renderPlace() { $("placeName").textContent = place.name; renderQibla();
 function setMapLinks() {
   // Same links as the first version: no coordinates, so the Maps app searches from the phone's GPS
   $("googleLink").href = "https://www.google.com/maps/search/" + encodeURIComponent("مسجد");
+  $("womenLink").href = "https://www.google.com/maps/search/" + encodeURIComponent("مصلى نساء");
 }
 
 function locate() {
