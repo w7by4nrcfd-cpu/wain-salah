@@ -168,6 +168,8 @@ function renderDhikrTitle(now) {
   const names = NAMES.slice(); if (day.friday) names[2] = "الجمعة";
   const txt = recent ? `أذكار ما بعد صلاة ${names[last]}. اضغط على الذكر لتعدّه.` : "اضغط على الذكر لتعدّه.";
   if ($("dhikrFor").textContent !== txt) $("dhikrFor").textContent = txt;
+  const hint = recent ? `بعد صلاة ${names[last]}` : "من حصن المسلم، مع عدّاد";
+  if ($("dhikrHint").textContent !== hint) $("dhikrHint").textContent = hint;
   if (fm !== dhikrFM) { dhikrFM = fm; renderDhikr(); }
 }
 function renderDhikr() {
@@ -185,6 +187,16 @@ function renderDhikr() {
   });
 }
 $("dhikrReset").onclick = () => { dhikrCounts = DHIKR.map(() => 0); renderDhikr(); };
+
+/* Adhkar open as their own screen; the phone's back gesture closes it */
+function showDhikr(open) {
+  $("dhikrView").hidden = !open;
+  document.body.style.overflow = open ? "hidden" : "";
+  if (open) $("dhikrView").querySelector(".view-body").scrollTop = 0;
+}
+$("openDhikr").onclick = () => { history.pushState({ v: "dhikr" }, ""); showDhikr(true); };
+$("closeDhikr").onclick = () => history.state && history.state.v === "dhikr" ? history.back() : showDhikr(false);
+window.addEventListener("popstate", () => showDhikr(history.state && history.state.v === "dhikr"));
 
 /* ===== location ===== */
 function renderPlace() {
