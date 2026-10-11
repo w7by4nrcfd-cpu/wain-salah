@@ -60,17 +60,11 @@ function hijri(dt) {
 }
 
 /* ===== geometry ===== */
-function distance(a, b, c, d) {
-  const R = 6371000, dp = rad(c - a), dl = rad(d - b);
-  const x = Math.sin(dp / 2) ** 2 + Math.cos(rad(a)) * Math.cos(rad(c)) * Math.sin(dl / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(x));
-}
 function bearing(a, b, c, d) {
   const dl = rad(d - b);
   return fix(deg(Math.atan2(Math.sin(dl) * Math.cos(rad(c)), Math.cos(rad(a)) * Math.sin(rad(c)) - Math.sin(rad(a)) * Math.cos(rad(c)) * Math.cos(dl))), 360);
 }
 const qiblaAngle = () => bearing(place.lat, place.lng, 21.4225, 39.8262);
-const fmtDist = m => m < 1000 ? Math.round(m / 10) * 10 + " م" : (m / 1000).toFixed(1) + " كم";
 
 /* ===== prayer view ===== */
 let day = null;
@@ -78,12 +72,13 @@ function computeDay() {
   const n = saNow(), y = n.getUTCFullYear(), m = n.getUTCMonth() + 1, d = n.getUTCDate();
   const h = hijri(n), t = prayerTimes(y, m, d, place.lat, place.lng, h.ramadan);
   const tm = new Date(Date.UTC(y, m - 1, d + 1));
-  const tt = prayerTimes(tm.getUTCFullYear(), tm.getUTCMonth() + 1, tm.getUTCDate(), place.lat, place.lng, hijri(tm).ramadan);
+  const htm = hijri(tm);
+  const tt = prayerTimes(tm.getUTCFullYear(), tm.getUTCMonth() + 1, tm.getUTCDate(), place.lat, place.lng, htm.ramadan);
   const ym = new Date(Date.UTC(y, m - 1, d - 1));
   const ty = prayerTimes(ym.getUTCFullYear(), ym.getUTCMonth() + 1, ym.getUTCDate(), place.lat, place.lng, false);
   day = {
     key: `${y}-${m}-${d}-${place.lat}-${place.lng}`, t, fajrTomorrow: tt[0] + 24, maghribYesterday: ty[4] - 24,
-    hijri: h.text, ramadan: h.ramadan || !!window.__forceRamadan, friday: n.getUTCDay() === 5 || !!window.__forceFriday,
+    hijri: h.text, ramadan: h.ramadan || !!window.__forceRamadan, ramadanTomorrow: htm.ramadan || !!window.__forceRamadanTomorrow, friday: n.getUTCDay() === 5 || !!window.__forceFriday,
     hijriDay: +new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", { day: "numeric", timeZone: "UTC" }).format(n),
     greg: new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-latn", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(n)
   };
@@ -161,13 +156,17 @@ function renderExtra(now) {
 /* Ramadan and Friday cards */
 function renderSpecial(now) {
   const t = day.t; let html = "";
-  if (day.ramadan) {
+  // Ramadan card: from the night before the first fast until iftar of the last day
+  const rToday = day.ramadan, rTomorrow = day.ramadanTomorrow;
+  const showR = (rToday && (now < t[4] || rTomorrow)) || (!rToday && rTomorrow && now >= t[4]);
+  if (showR) {
     let label, target;
-    if (now < t[0]) { label = "باقي على الإمساك"; target = t[0]; }
-    else if (now < t[4]) { label = "باقي على الإفطار"; target = t[4]; }
+    if (rToday && now < t[0]) { label = "باقي على الإمساك"; target = t[0]; }
+    else if (rToday && now < t[4]) { label = "باقي على الإفطار"; target = t[4]; }
     else { label = "باقي على الإمساك"; target = day.fajrTomorrow; }
     const left = Math.max(0, Math.round((target - now) * 3600));
-    html += `<div class="sp ramadan"><div class="sp-top"><span class="sp-tag">رمضان</span><span class="sp-day">اليوم ${day.hijriDay}</span></div>
+    const tag = rToday ? `اليوم ${day.hijriDay}` : "غداً أول أيام رمضان";
+    html += `<div class="sp ramadan"><div class="sp-top"><span class="sp-tag">رمضان</span><span class="sp-day">${tag}</span></div>
       <div class="sp-lbl">${label}</div><div class="sp-count">${clock(left)}</div>
       <div class="sp-row"><span>الإمساك ${hm(now >= t[4] ? day.fajrTomorrow : t[0])}</span><span>الإفطار ${hm(t[4])}</span></div></div>`;
   }
@@ -180,7 +179,6 @@ function renderSpecial(now) {
 }
 
 /* ===== adhkar: morning, evening, after prayer (Hisn al-Muslim, authentic narrations only) ===== */
-const R = "صلى الله عليه وسلم";
 const COMMON_ME = (m) => {
   const am = m === "morning";
   return [
@@ -341,12 +339,8 @@ function renderPlace() {
   $("placeName").textContent = place.name;
   $("coords").textContent = place.approx ? "" : `(${place.lat.toFixed(4)}، ${place.lng.toFixed(4)})`; renderQibla(); setMapLinks(); }
 
-/* Nearest mosques in Apple / Google Maps: centred on the GPS fix when we have one,
-   otherwise the Maps app uses the phone's own location. */
-function setMapLinks() {
-  // Same links as the first version: no coordinates, so the Maps app searches from the phone's GPS
-  renderPicker();
-}
+/* Google Maps search link: no coordinates, so Maps searches from the phone's own GPS */
+function setMapLinks() { renderPicker(); }
 
 function locate() {
   if (!("geolocation" in navigator)) { setStatus("جهازك لا يدعم تحديد الموقع."); return; }
