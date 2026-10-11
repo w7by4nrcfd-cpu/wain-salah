@@ -210,7 +210,7 @@ function renderMosques(keepStatus) {
       <div class="acts"><a class="go" target="_blank" rel="noopener">اذهب</a><button class="pick" type="button">مسجدي</button></div>`;
     li.querySelector(".nm").textContent = m.name;
     li.querySelector(".arrow svg").dataset.b = m.b;
-    li.querySelector(".go").href = `https://maps.apple.com/?daddr=${m.lat},${m.lng}&dirflg=w`;
+    li.querySelector(".go").href = `https://www.google.com/maps/dir/?api=1&destination=${m.lat},${m.lng}&travelmode=walking`;
     li.querySelector(".pick").onclick = () => adopt(m);
     list.appendChild(li);
   });
