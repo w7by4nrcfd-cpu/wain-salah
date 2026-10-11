@@ -442,18 +442,45 @@ function onOrient(e) {
   if (h == null) return;
   heading = h; renderQibla();
 }
-async function startCompass() {
-  try {
-    if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
-      const p = await DeviceOrientationEvent.requestPermission();
-      if (p !== "granted") { $("qState").textContent = "لم تسمح باستخدام البوصلة."; return; }
-    }
-    window.addEventListener("deviceorientationabsolute", onOrient);
-    window.addEventListener("deviceorientation", onOrient);
-    $("compassBtn").hidden = true;
-    $("qState").textContent = "أمسك الجوال بشكل مستوٍ…";
-    setTimeout(() => { if (heading == null) $("qState").textContent = "البوصلة غير متاحة على هذا الجهاز. استخدم الزاوية من الشمال."; }, 3000);
-  } catch (e) { $("qState").textContent = "البوصلة غير متاحة على هذا الجهاز."; }
+/* iPhone asks for motion permission only inside a tap, and the home-screen app keeps its own
+   permission separate from Safari. Ask directly in the tap, explain clearly if it is refused,
+   and once allowed, start again automatically on the first touch of later visits. */
+const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+let compassOn = false;
+function listenCompass() {
+  if (compassOn) return; compassOn = true;
+  window.addEventListener("deviceorientationabsolute", onOrient);
+  window.addEventListener("deviceorientation", onOrient);
+  $("qState").textContent = "أمسك الجوال بشكل مستوٍ…";
+  setTimeout(() => {
+    if (heading != null) return;
+    compassOn = false;
+    $("compassBtn").hidden = false; $("compassBtn").textContent = "إعادة المحاولة";
+    $("qState").textContent = "لم تصل قراءة البوصلة. حرّك الجوال على شكل رقم 8 ثم أعد المحاولة، أو استخدم الزاوية من الشمال.";
+  }, 4000);
+}
+function compassDenied() {
+  store.set("compassOK", false);
+  $("compassBtn").hidden = false; $("compassBtn").textContent = "إعادة المحاولة";
+  $("qState").textContent = isStandalone()
+    ? "رُفض إذن البوصلة لهذا التطبيق. لإصلاحه: احذف أيقونة مُصلّى من الشاشة الرئيسية، ثم افتح الموقع في Safari وأضفه من جديد، واضغط «سماح» عند تشغيل البوصلة."
+    : "رُفض إذن البوصلة. أغلق الصفحة وافتحها من جديد ثم اضغط «تشغيل البوصلة» واختر «سماح».";
+}
+function startCompass() {
+  const D = window.DeviceOrientationEvent;
+  if (D && typeof D.requestPermission === "function") {
+    // must be the first thing done inside the tap
+    D.requestPermission().then(p => {
+      if (p === "granted") { store.set("compassOK", true); $("compassBtn").hidden = true; listenCompass(); }
+      else compassDenied();
+    }).catch(() => compassDenied());
+  } else if (D) { $("compassBtn").hidden = true; listenCompass(); }
+  else $("qState").textContent = "البوصلة غير متاحة على هذا الجهاز. استخدم الزاوية من الشمال.";
+}
+// Already allowed before: start on the first touch anywhere, no need to find the button again
+if (store.get("compassOK", false)) {
+  const once = () => { document.removeEventListener("touchend", once); document.removeEventListener("click", once); if (!compassOn && heading == null) startCompass(); };
+  document.addEventListener("touchend", once); document.addEventListener("click", once);
 }
 
 /* ===== wiring ===== */
