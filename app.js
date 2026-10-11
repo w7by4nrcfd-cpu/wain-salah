@@ -15,9 +15,6 @@ const FALLBACK = { name: "لم يُحدَّد بعد", lat: 21.4225, lng: 39.826
 
 let place = store.get("place", FALLBACK);
 if (place.approx || place.manual) place = FALLBACK; // never show a made-up town as the user's location
-let mine = store.get("mine", []);
-let selected = store.get("sel", null);
-let editing = selected;
 let heading = null;
 
 /* ===== prayer times (Umm al-Qura: Fajr 18.5°, Isha 90 min after Maghrib, 120 in Ramadan) ===== */
@@ -80,22 +77,20 @@ function computeDay() {
     greg: new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-latn", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(n)
   };
 }
-const currentMosque = () => mine.find(x => x.id === selected) || { name: "إعدادات عامة", off: DEFAULT_OFF };
 
 function renderPrayer() {
   const n = saNow();
   if (!day || !day.key.startsWith(`${n.getUTCFullYear()}-${n.getUTCMonth() + 1}-${n.getUTCDate()}-`)) computeDay();
   const now = n.getUTCHours() + n.getUTCMinutes() / 60 + n.getUTCSeconds() / 3600;
-  const cm = currentMosque(), off = cm.off;
+  const off = DEFAULT_OFF;
   const ni = day.t.findIndex((x, i) => i !== 1 && x > now);
   const idx = ni === -1 ? 0 : ni, target = ni === -1 ? day.fajrTomorrow : day.t[ni];
   const left = Math.max(0, Math.round((target - now) * 3600));
   $("countdown").textContent = [left / 3600 | 0, (left % 3600) / 60 | 0, left % 60].map(v => String(v).padStart(2, "0")).join(":");
   $("nextName").textContent = NAMES[idx];
   $("nextAdhan").textContent = hm(target);
-  $("nextIqama").textContent = "الإقامة " + hm(target + off[OFF_IDX[idx]] / 60) + " · " + cm.name;
+  $("nextIqama").textContent = "الإقامة تقريباً " + hm(target + off[OFF_IDX[idx]] / 60);
   $("hijri").textContent = day.hijri; $("greg").textContent = day.greg;
-  $("iqMosque").textContent = cm.name;
 
   let html = '<div class="row head"><span>الصلاة</span><span class="t">الأذان</span><span class="t">الإقامة</span></div>';
   day.t.forEach((x, i) => {
@@ -227,40 +222,6 @@ async function startCompass() {
   } catch (e) { $("qState").textContent = "البوصلة غير متاحة على هذا الجهاز."; }
 }
 
-/* ===== my mosques ===== */
-function renderMine() {
-  const box = $("myChips"); box.innerHTML = "";
-  mine.forEach(m => {
-    const b = document.createElement("button");
-    b.className = "chip"; b.type = "button"; b.textContent = m.name;
-    b.setAttribute("aria-pressed", m.id === selected);
-    b.onclick = () => { selected = editing = m.id; store.set("sel", selected); renderMine(); renderPrayer(); };
-    box.appendChild(b);
-  });
-  const m = mine.find(x => x.id === editing);
-  $("formTitle").textContent = m ? "تعديل: " + m.name : "أضف مسجداً";
-  $("delMosque").hidden = !m;
-  $("mName").value = m ? m.name : "";
-  (m ? m.off : DEFAULT_OFF).forEach((v, i) => $("o" + i).value = v);
-}
-$("saveMosque").onclick = () => {
-  const name = $("mName").value.trim();
-  if (!name) { $("mName").placeholder = "اكتب اسم المسجد أولاً"; $("mName").focus(); return; }
-  const off = [0, 1, 2, 3, 4].map(i => Math.min(90, Math.max(0, parseInt($("o" + i).value, 10) || 0)));
-  let m = mine.find(x => x.id === editing);
-  if (m) { m.name = name; m.off = off; } else { m = { id: "m" + Date.now(), name, off }; mine.push(m); }
-  selected = editing = m.id; store.set("mine", mine); store.set("sel", selected);
-  renderMine(); renderPrayer();
-  $("saveMosque").textContent = "تم الحفظ"; setTimeout(() => $("saveMosque").textContent = "حفظ", 1500);
-};
-$("newMosque").onclick = () => { editing = null; renderMine(); $("mName").focus(); };
-$("delMosque").onclick = () => {
-  mine = mine.filter(x => x.id !== editing);
-  if (selected === editing) selected = mine[0]?.id || null;
-  editing = selected; store.set("mine", mine); store.set("sel", selected);
-  renderMine(); renderPrayer();
-};
-
 /* ===== wiring ===== */
 $("locateBtn").onclick = locate;
 $("compassBtn").onclick = startCompass;
@@ -269,7 +230,7 @@ const standalone = window.matchMedia("(display-mode: standalone)").matches || na
 if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !standalone && !store.get("hideInstall", false)) $("installHint").hidden = false;
 $("installClose").onclick = () => { $("installHint").hidden = true; store.set("hideInstall", true); };
 
-buildTicks(); renderPlace(); renderMine(); renderPrayer();
+buildTicks(); renderPlace(); renderPrayer();
 setInterval(renderPrayer, 1000);
 // Ask for the real location straight away; until then times are only a placeholder
 locate();
