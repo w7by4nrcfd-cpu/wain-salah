@@ -16,15 +16,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 <div class="wrap">
   <header>
     <div>
       <h1 class="brand">وين الصلاة</h1>
-      <div class="place-chip"><span id="placeName">—</span> · <button class="link" id="locateBtn" type="button">حدّد موقعي</button></div>
-      <div class="note" id="mosqueStatus"></div>
     </div>
     <div class="dates"><b id="hijri">—</b><br><span id="greg">—</span></div>
   </header>
@@ -33,6 +31,12 @@
     <span>ثبّته كتطبيق: اضغط زر المشاركة ثم «إضافة إلى الشاشة الرئيسية».</span>
     <button class="x" id="installClose" type="button" aria-label="إغلاق">✕</button>
   </div>
+
+  <div class="placebar">
+    <div class="pb-text"><span class="pb-lbl">موقعك</span><span id="placeName">—</span></div>
+    <button class="pb-btn" id="locateBtn" type="button">حدّد موقعي</button>
+  </div>
+  <div class="note" id="mosqueStatus"></div>
 
   <div class="hero" aria-live="polite">
     <div class="lbl">الصلاة القادمة</div>
@@ -102,8 +106,8 @@
     </div>
   </section>
 
-  <footer class="note">حدّد موقعك لتُضبط المواقيت والقبلة على مكانك بدقة · الإصدار 13</footer>
+  <footer class="note">حدّد موقعك لتُضبط المواقيت والقبلة على مكانك بدقة · الإصدار 14</footer>
 </div>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>

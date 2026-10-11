@@ -20,6 +20,14 @@ header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
 .dates{font-size:13px;color:var(--muted);text-align:left}
 .dates b{color:var(--ink);font-weight:600}
 .place-chip{font-size:13px;color:var(--muted)}
+.placebar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px 10px 10px}
+.pb-text{display:flex;flex-direction:column;min-width:0}
+.pb-lbl{font-size:11px;color:var(--muted)}
+#placeName{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pb-btn{flex:none;font:inherit;font-size:14px;font-weight:600;border:0;border-radius:10px;padding:9px 16px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.pb-btn:disabled{opacity:.7}
+.pb-btn:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+#mosqueStatus:empty{display:none}
 .install{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--brass-soft);border-radius:12px;padding:10px 14px;font-size:13px}
 .x{all:unset;cursor:pointer;padding:2px 6px;color:var(--muted)}
 .hero{background:var(--accent);color:var(--accent-ink);border-radius:50% 50% 22px 22px / 110px 110px 22px 22px;padding:58px 22px 24px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
