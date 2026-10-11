@@ -1,6 +1,6 @@
 // App shell cached for offline use; mosque and place lookups always go to the network.
-const VERSION = "ws-v2";
-const SHELL = ["./", "index.html", "style.css", "app.js", "manifest.webmanifest",
+const VERSION = "ws-v3";
+const SHELL = ["./", "index.html", "style.css?v=3", "app.js?v=3", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
@@ -32,7 +32,7 @@ self.addEventListener("fetch", e => {
 
   // Own files: network first so updates arrive, cache as fallback offline
   if (url.origin === location.origin) {
-    e.respondWith(fetch(e.request).then(res => {
+    e.respondWith(fetch(e.request, { cache: "no-cache" }).then(res => {
       const copy = res.clone();
       caches.open(VERSION).then(c => c.put(e.request, copy));
       return res;
