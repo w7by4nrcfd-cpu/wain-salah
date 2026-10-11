@@ -109,7 +109,21 @@ function renderPrayer() {
 }
 
 /* ===== location ===== */
-function renderPlace() { $("placeName").textContent = place.name; renderQibla(); }
+function renderPlace() { $("placeName").textContent = place.name; renderQibla(); setMapLinks(); }
+
+/* Nearest mosques in Apple / Google Maps: centred on the GPS fix when we have one,
+   otherwise the Maps app uses the phone's own location. */
+function setMapLinks() {
+  const q = encodeURIComponent("مسجد");
+  if (store.get("located", false) && !place.approx) {
+    const ll = place.lat.toFixed(6) + "," + place.lng.toFixed(6);
+    $("appleLink").href = `https://maps.apple.com/?q=${q}&sll=${ll}&z=16`;
+    $("googleLink").href = `https://www.google.com/maps/search/${q}/@${ll},16z`;
+  } else {
+    $("appleLink").href = `https://maps.apple.com/?q=${q}`;
+    $("googleLink").href = `https://www.google.com/maps/search/${encodeURIComponent("مسجد قريب مني")}`;
+  }
+}
 
 function locate() {
   if (!("geolocation" in navigator)) { setStatus("جهازك لا يدعم تحديد الموقع."); return; }
