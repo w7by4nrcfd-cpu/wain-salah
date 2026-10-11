@@ -17,8 +17,6 @@ let place = store.get("place", FALLBACK);
 let mine = store.get("mine", []);
 let selected = store.get("sel", null);
 let editing = selected;
-let nearby = [];
-let shown = 8;
 let heading = null;
 
 /* ===== prayer times (Umm al-Qura: Fajr 18.5°, Isha 90 min after Maghrib, 120 in Ramadan) ===== */
@@ -120,17 +118,16 @@ function setMapLinks() {
 
 function locate() {
   if (!("geolocation" in navigator)) { setStatus("جهازك لا يدعم تحديد الموقع."); return; }
-  $("locateBtn").disabled = true; $("locateBtn").textContent = "جارٍ تحديد موقعك…";
+  $("locateBtn").disabled = true; $("locateBtn").textContent = "جارٍ التحديد…";
   navigator.geolocation.getCurrentPosition(async pos => {
     const { latitude: lat, longitude: lng } = pos.coords;
     place = { name: "موقعك الحالي", lat, lng };
     store.set("place", place); store.set("located", true);
-    $("locateBtn").hidden = true;
+    $("locateBtn").disabled = false; $("locateBtn").textContent = "تحديث الموقع"; setStatus("");
     day = null; renderPlace(); renderPrayer();
-    loadMosques(false);
     placeName(lat, lng);
   }, err => {
-    $("locateBtn").disabled = false; $("locateBtn").hidden = false; $("locateBtn").textContent = "حدّد موقعي";
+    $("locateBtn").disabled = false; $("locateBtn").textContent = "حدّد موقعي";
     setStatus(err.code === 1
       ? "لم تسمح بالوصول للموقع. فعّله من الإعدادات ← الخصوصية ← خدمات الموقع ← Safari، ثم اضغط «حدّد موقعي»."
       : "تعذّر تحديد موقعك، حاول مرة أخرى في مكان مكشوف.");
@@ -163,90 +160,7 @@ function renderPicker() {
 }
 document.querySelectorAll(".seg button").forEach(b => b.onclick = () => { kind = b.dataset.kind; store.set("kind", kind); renderPicker(); });
 
-/* ===== nearby mosques (OpenStreetMap / Overpass) ===== */
-const OVERPASS = [
-  "https://overpass-api.de/api/interpreter",
-  "https://overpass.private.coffee/api/interpreter",
-  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter"
-];
 function setStatus(t) { $("mosqueStatus").textContent = t; }
-
-/* Ask every server at once with a time limit; the first good answer wins. */
-async function overpass(lat, lng, r) {
-  const sel = `["amenity"="place_of_worship"]["religion"="muslim"](around:${r},${lat},${lng})`;
-  const q = `[out:json][timeout:12];(node${sel};way${sel};);out center 80;`;
-  const ctrls = OVERPASS.map(() => new AbortController());
-  const timer = setTimeout(() => ctrls.forEach(c => c.abort()), 14000);
-  try {
-    return await Promise.any(OVERPASS.map(async (url, i) => {
-      const res = await fetch(url + "?data=" + encodeURIComponent(q), { signal: ctrls[i].signal });
-      if (!res.ok) throw new Error(res.status);
-      const j = await res.json();
-      if (!Array.isArray(j.elements)) throw new Error("bad");
-      ctrls.forEach((c, k) => { if (k !== i) c.abort(); });
-      return j.elements;
-    }));
-  } catch (e) { throw new Error("offline"); }
-  finally { clearTimeout(timer); }
-}
-
-async function loadMosques(force) {
-  const key = place.lat.toFixed(3) + "," + place.lng.toFixed(3);
-  const cache = store.get("near", null);
-  if (!force && cache && cache.key === key && Date.now() - cache.at < 7 * 864e5) { nearby = cache.list; shown = 8; renderMosques(); return; }
-  setStatus("جارٍ البحث عن المساجد حولك…");
-  try {
-    let els = [];
-    els = await overpass(place.lat, place.lng, 3000);
-    if (els.length < 3) { setStatus("المساجد قليلة قربك، أوسّع البحث…"); els = await overpass(place.lat, place.lng, 12000); }
-    nearby = els.map(e => {
-      const la = e.lat ?? e.center?.lat, lo = e.lon ?? e.center?.lon, tg = e.tags || {};
-      return { id: e.type[0] + e.id, name: tg["name:ar"] || tg.name || "مسجد بدون اسم", lat: la, lng: lo };
-    }).filter(m => m.lat != null);
-    store.set("near", { key, at: Date.now(), list: nearby });
-    shown = 8; renderMosques();
-  } catch (e) {
-    $("mosqueStatus").innerHTML = (cache ? "خادم المساجد لا يستجيب، أعرض آخر نتائج محفوظة. " : "خادم المساجد لا يستجيب الآن. اضغط «تحديث» بعد قليل، أو ")
-      + `<a href="https://www.google.com/maps/search/${encodeURIComponent("مسجد")}" target="_blank" rel="noopener">ابحث في خرائط Google</a>.`;
-    if (cache) { nearby = cache.list; renderMosques(true); }
-  }
-}
-
-const ARROW = '<svg viewBox="0 0 24 24"><path d="M12 2 L19 20 L12 16 L5 20 Z" fill="var(--accent)"/></svg>';
-function renderMosques(keepStatus) {
-  nearby.forEach(m => { m.d = distance(place.lat, place.lng, m.lat, m.lng); m.b = bearing(place.lat, place.lng, m.lat, m.lng); });
-  nearby.sort((a, b) => a.d - b.d);
-  const list = $("mosqueList"); list.innerHTML = "";
-  if (!keepStatus) setStatus(nearby.length ? `${nearby.length} مسجداً في محيطك.` : "لم نجد مساجد مسجّلة قربك على الخريطة. أضف مسجدك من الأسفل.");
-  nearby.slice(0, shown).forEach(m => {
-    const li = document.createElement("li");
-    li.className = "m" + (mine.some(x => x.osm === m.id && x.id === selected) ? " mine" : "");
-    li.innerHTML = `<div class="arrow">${ARROW}</div>
-      <div class="info"><div class="nm"></div><div class="meta"><b>${fmtDist(m.d)}</b> · ${Math.max(1, Math.round(m.d / 75))} د مشياً</div></div>
-      <div class="acts"><a class="go" target="_blank" rel="noopener">اذهب</a><button class="pick" type="button">مسجدي</button></div>`;
-    li.querySelector(".nm").textContent = m.name;
-    li.querySelector(".arrow svg").dataset.b = m.b;
-    li.querySelector(".go").href = `https://www.google.com/maps/dir/?api=1&destination=${m.lat},${m.lng}&travelmode=walking`;
-    li.querySelector(".pick").onclick = () => adopt(m);
-    list.appendChild(li);
-  });
-  $("moreBtn").hidden = nearby.length <= shown;
-  rotateArrows();
-}
-function rotateArrows() {
-  document.querySelectorAll(".arrow svg").forEach(s => {
-    const r = heading == null ? +s.dataset.b : +s.dataset.b - heading;
-    s.style.transform = `rotate(${r}deg)`;
-  });
-}
-function adopt(m) {
-  let x = mine.find(y => y.osm === m.id);
-  if (!x) { x = { id: "m" + Date.now(), osm: m.id, name: m.name === "مسجد بدون اسم" ? "مسجدي" : m.name, off: DEFAULT_OFF.slice() }; mine.push(x); store.set("mine", mine); }
-  selected = editing = x.id; store.set("sel", selected);
-  renderMine(); renderMosques(); renderPrayer();
-  $("mName").scrollIntoView({ behavior: "smooth", block: "center" });
-}
 
 /* ===== qibla compass ===== */
 function buildTicks() {
@@ -273,7 +187,7 @@ function onOrient(e) {
   if (typeof e.webkitCompassHeading === "number") h = e.webkitCompassHeading;
   else if (e.absolute && e.alpha != null) h = 360 - e.alpha;
   if (h == null) return;
-  heading = h; renderQibla(); rotateArrows();
+  heading = h; renderQibla();
 }
 async function startCompass() {
   try {
@@ -296,7 +210,7 @@ function renderMine() {
     const b = document.createElement("button");
     b.className = "chip"; b.type = "button"; b.textContent = m.name;
     b.setAttribute("aria-pressed", m.id === selected);
-    b.onclick = () => { selected = editing = m.id; store.set("sel", selected); renderMine(); renderMosques(true); renderPrayer(); };
+    b.onclick = () => { selected = editing = m.id; store.set("sel", selected); renderMine(); renderPrayer(); };
     box.appendChild(b);
   });
   const m = mine.find(x => x.id === editing);
@@ -320,13 +234,11 @@ $("delMosque").onclick = () => {
   mine = mine.filter(x => x.id !== editing);
   if (selected === editing) selected = mine[0]?.id || null;
   editing = selected; store.set("mine", mine); store.set("sel", selected);
-  renderMine(); renderMosques(true); renderPrayer();
+  renderMine(); renderPrayer();
 };
 
 /* ===== wiring ===== */
 $("locateBtn").onclick = locate;
-$("refreshBtn").onclick = () => { if (store.get("located", false)) locate(); else loadMosques(true); };
-$("moreBtn").onclick = () => { shown += 8; renderMosques(true); };
 $("compassBtn").onclick = startCompass;
 
 const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
@@ -335,7 +247,6 @@ $("installClose").onclick = () => { $("installHint").hidden = true; store.set("h
 
 buildTicks(); renderPlace(); renderMine(); renderPrayer();
 setInterval(renderPrayer, 1000);
-if (store.get("located", false)) { $("locateBtn").hidden = true; loadMosques(false); locate(); }
-else setStatus("اضغط «حدّد موقعي» لعرض أقرب المساجد وضبط المواقيت على مكانك.");
+if (store.get("located", false)) locate();
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
