@@ -147,10 +147,17 @@ footer{text-align:center}
 .view-bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;border-bottom:1px solid var(--line);background:var(--surface)}
 .view-bar b{font-family:var(--display);font-size:17px}
 .view-bar .back{justify-self:start}
-.view-bar #dhikrReset{justify-self:end}
 .view-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 24px);display:flex;flex-direction:column;gap:10px;max-width:520px;width:100%;margin:0 auto}
 
-.dtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
-.dtab{font:inherit;font-size:14px;font-weight:600;border:0;border-radius:10px;padding:9px 4px;background:transparent;color:var(--muted);cursor:pointer;touch-action:manipulation}
-.dtab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
-.dtab:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.view-bar{position:relative}
+.view-bar #menuBtn{justify-self:end}
+.menu-btn{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);cursor:pointer;touch-action:manipulation}
+.menu-btn svg{width:22px;height:22px}
+.menu-btn[aria-expanded="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.menu-btn:focus-visible,.menu-item:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.menu{position:absolute;z-index:5;inset-inline:12px;top:calc(env(safe-area-inset-top,0px) + 66px);background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 12px 32px rgba(0,0,0,.25)}
+.menu-item{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:1px;padding:12px 14px;border-radius:12px;touch-action:manipulation}
+.menu-item>span:first-child{font-weight:600;font-size:16px}
+.mi-s{font-size:12px;color:var(--muted)}
+.menu-item[aria-current="true"]{background:var(--accent);color:var(--accent-ink)}
+.menu-item[aria-current="true"] .mi-s{color:var(--accent-ink);opacity:.8}

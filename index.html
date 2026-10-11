@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;600;700&family=Readex+Pro:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="style.css?v=25">
+<link rel="stylesheet" href="style.css?v=26">
 </head>
 <body>
 <div class="wrap">
@@ -101,25 +101,27 @@
   </section>
 
 
-  <footer class="note">حدّد موقعك لتُضبط المواقيت والقبلة على مكانك بدقة · الإصدار 25</footer>
+  <footer class="note">حدّد موقعك لتُضبط المواقيت والقبلة على مكانك بدقة · الإصدار 26</footer>
 </div>
 <div class="view" id="dhikrView" hidden>
   <div class="view-bar">
     <button class="link back" id="closeDhikr" type="button">› رجوع</button>
-    <b>الأذكار</b>
-    <button class="link" id="dhikrReset" type="button">إعادة العد</button>
+    <b id="dhikrTitle">الأذكار</b>
+    <button class="menu-btn" id="menuBtn" type="button" aria-label="اختيار الأذكار" aria-expanded="false" aria-controls="dhikrMenu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
   </div>
-  <div class="dtabs" role="tablist">
-    <button class="dtab" role="tab" data-tab="morning" type="button">الصباح</button>
-    <button class="dtab" role="tab" data-tab="evening" type="button">المساء</button>
-    <button class="dtab" role="tab" data-tab="salah" type="button">بعد الصلاة</button>
+  <div class="menu" id="dhikrMenu" hidden>
+    <button class="menu-item" data-tab="morning" type="button"><span>أذكار الصباح</span><span class="mi-s">من الفجر حتى ارتفاع الشمس</span></button>
+    <button class="menu-item" data-tab="evening" type="button"><span>أذكار المساء</span><span class="mi-s">من العصر حتى المغرب</span></button>
+    <button class="menu-item" data-tab="salah" type="button"><span>أذكار بعد الصلاة</span><span class="mi-s">بعد كل صلاة مفروضة</span></button>
   </div>
   <div class="view-body">
-    <div class="dk-total"><div class="dk-total-row"><span id="dhikrTotal">—</span><span class="note" id="dhikrWhen"></span></div><div class="dk-track"><div class="dk-bar" id="dhikrBar"></div></div></div>
+    <div class="dk-total"><div class="dk-total-row"><span id="dhikrTotal">—</span><button class="link" id="dhikrReset" type="button">إعادة العد</button></div><div class="dk-track"><div class="dk-bar" id="dhikrBar"></div></div></div>
     <ol class="dhikr" id="dhikr"></ol>
     <p class="note">من كتاب حصن المسلم، مع ذكر من رواه تحت كل ذكر.</p>
   </div>
 </div>
-<script src="app.js?v=25"></script>
+<script src="app.js?v=26"></script>
 </body>
 </html>

@@ -228,8 +228,9 @@ function renderDhikrTitle(now) {
 const RING = 2 * Math.PI * 17;
 function setTab(k) {
   tab = k;
-  document.querySelectorAll(".dtab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === k));
-  $("dhikrWhen").textContent = ADHKAR[k].when;
+  document.querySelectorAll(".menu-item").forEach(b => b.setAttribute("aria-current", b.dataset.tab === k));
+  $("dhikrTitle").textContent = k === "salah" ? "أذكار بعد الصلاة" : ADHKAR[k].title;
+  showMenu(false);
   renderDhikr();
   $("dhikrView").querySelector(".view-body").scrollTop = 0;
 }
@@ -275,16 +276,23 @@ function tapDhikr(i, b) {
   b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump");
   if (finished) {
     paintTotal();
-    const next = [...document.querySelectorAll(".dk:not(.done)")][0];
-    if (next) setTimeout(() => next.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
+    // move on to the next unfinished dhikr BELOW this one only; never jump back up
+    const all = [...document.querySelectorAll(".dk")], next = all.slice(all.indexOf(b) + 1).find(x => !x.classList.contains("done"));
+    if (next) setTimeout(() => next.scrollIntoView({ behavior: "smooth", block: "nearest" }), 250);
   }
 }
 $("dhikrReset").onclick = () => { counts[tab] = []; renderDhikr(); };
-document.querySelectorAll(".dtab").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+function showMenu(open) {
+  $("dhikrMenu").hidden = !open;
+  $("menuBtn").setAttribute("aria-expanded", open);
+}
+$("menuBtn").onclick = () => showMenu($("dhikrMenu").hidden);
+document.querySelectorAll(".menu-item").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+$("dhikrView").addEventListener("click", e => { if (!$("dhikrMenu").hidden && !e.target.closest("#dhikrMenu, #menuBtn")) showMenu(false); });
 
 /* Adhkar open as their own screen; the phone's back gesture closes it */
 function showDhikr(open) {
-  $("dhikrView").hidden = !open;
+  $("dhikrView").hidden = !open; if (!open) showMenu(false);
   document.body.style.overflow = open ? "hidden" : "";
 }
 $("openDhikr").onclick = () => {
