@@ -140,19 +140,31 @@ async function placeName(lat, lng) {
 }
 
 /* ===== nearby mosques (OpenStreetMap / Overpass) ===== */
-const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+const OVERPASS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter"
+];
 function setStatus(t) { $("mosqueStatus").textContent = t; }
 
+/* Ask every server at once with a time limit; the first good answer wins. */
 async function overpass(lat, lng, r) {
   const sel = `["amenity"="place_of_worship"]["religion"="muslim"](around:${r},${lat},${lng})`;
-  const q = `[out:json][timeout:25];(node${sel};way${sel};relation${sel};);out center 80;`;
-  for (const url of OVERPASS) {
-    try {
-      const res = await fetch(url, { method: "POST", body: "data=" + encodeURIComponent(q), headers: { "Content-Type": "application/x-www-form-urlencoded" } });
-      if (res.ok) return (await res.json()).elements || [];
-    } catch (e) {}
-  }
-  throw new Error("offline");
+  const q = `[out:json][timeout:12];(node${sel};way${sel};);out center 80;`;
+  const ctrls = OVERPASS.map(() => new AbortController());
+  const timer = setTimeout(() => ctrls.forEach(c => c.abort()), 14000);
+  try {
+    return await Promise.any(OVERPASS.map(async (url, i) => {
+      const res = await fetch(url + "?data=" + encodeURIComponent(q), { signal: ctrls[i].signal });
+      if (!res.ok) throw new Error(res.status);
+      const j = await res.json();
+      if (!Array.isArray(j.elements)) throw new Error("bad");
+      ctrls.forEach((c, k) => { if (k !== i) c.abort(); });
+      return j.elements;
+    }));
+  } catch (e) { throw new Error("offline"); }
+  finally { clearTimeout(timer); }
 }
 
 async function loadMosques(force) {
@@ -162,7 +174,8 @@ async function loadMosques(force) {
   setStatus("جارٍ البحث عن المساجد حولك…");
   try {
     let els = [];
-    for (const r of [1500, 4000, 10000]) { els = await overpass(place.lat, place.lng, r); if (els.length >= 5) break; }
+    els = await overpass(place.lat, place.lng, 3000);
+    if (els.length < 3) { setStatus("المساجد قليلة قربك، أوسّع البحث…"); els = await overpass(place.lat, place.lng, 12000); }
     nearby = els.map(e => {
       const la = e.lat ?? e.center?.lat, lo = e.lon ?? e.center?.lon, tg = e.tags || {};
       return { id: e.type[0] + e.id, name: tg["name:ar"] || tg.name || "مسجد بدون اسم", lat: la, lng: lo };
@@ -170,7 +183,8 @@ async function loadMosques(force) {
     store.set("near", { key, at: Date.now(), list: nearby });
     shown = 8; renderMosques();
   } catch (e) {
-    setStatus(cache ? "لا يوجد اتصال، أعرض آخر نتائج محفوظة." : "تعذّر جلب المساجد. تحقق من الإنترنت ثم اضغط «تحديث».");
+    $("mosqueStatus").innerHTML = (cache ? "خادم المساجد لا يستجيب، أعرض آخر نتائج محفوظة. " : "خادم المساجد لا يستجيب الآن. اضغط «تحديث» بعد قليل، أو ")
+      + `<a href="https://maps.apple.com/?q=${encodeURIComponent("مسجد")}" target="_blank" rel="noopener">ابحث في خرائط آبل</a>.`;
     if (cache) { nearby = cache.list; renderMosques(true); }
   }
 }

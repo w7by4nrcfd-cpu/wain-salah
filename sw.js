@@ -1,5 +1,5 @@
 // App shell cached for offline use; mosque and place lookups always go to the network.
-const VERSION = "ws-v1";
+const VERSION = "ws-v2";
 const SHELL = ["./", "index.html", "style.css", "app.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 
@@ -16,7 +16,7 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET") return;
-  if (/overpass|nominatim/.test(url.hostname)) return;
+  if (/overpass|nominatim|mail\.ru/.test(url.hostname)) return;
 
   // Fonts: cache after first load
   if (/fonts\.(googleapis|gstatic)\.com/.test(url.hostname)) {
