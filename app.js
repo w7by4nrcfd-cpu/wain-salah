@@ -149,7 +149,6 @@ async function placeName(lat, lng) {
 
 /* ===== Google Maps picker: choose what to search before leaving the site ===== */
 const KINDS = {
-  jami:   { term: "جامع", note: "الجوامع التي تُقام فيها الجمعة حول موقعك." },
   mosque: { term: "مسجد", note: "المساجد حول موقعك." },
   women:  { term: "مصلى نساء", note: "المصليات النسائية حول موقعك." }
 };
