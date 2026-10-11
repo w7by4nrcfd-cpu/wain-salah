@@ -115,8 +115,7 @@ function renderPlace() { $("placeName").textContent = place.name; renderQibla();
    otherwise the Maps app uses the phone's own location. */
 function setMapLinks() {
   // Same links as the first version: no coordinates, so the Maps app searches from the phone's GPS
-  $("googleLink").href = "https://www.google.com/maps/search/" + encodeURIComponent("مسجد");
-  $("womenLink").href = "https://www.google.com/maps/search/" + encodeURIComponent("مصلى نساء");
+  renderPicker();
 }
 
 function locate() {
@@ -146,6 +145,34 @@ async function placeName(lat, lng) {
     if (parts.length) { place.name = parts.join("، "); store.set("place", place); renderPlace(); }
   } catch (e) {}
 }
+
+
+/* ===== Google Maps picker: choose what to search before leaving the site ===== */
+const KINDS = {
+  mosque:  { terms: ["مسجد", "جامع"], note: "يبحث عن المساجد والجوامع حول موقعك." },
+  musalla: { terms: ["مصلى", "مصلى طريق", "مصلى محطة"], note: "المصليات الصغيرة في المحطات والطرق والأسواق." },
+  women:   { terms: ["مصلى نساء", "مصلى النساء", "مصلى نسائي", "مصلى السيدات", "مصلى للنساء", "قسم النساء", "مصلى عائلات"],
+             note: "المصليات النسائية تُسجَّل في الخرائط بأسماء مختلفة. إن لم تجد نتيجة قريبة جرّب اسماً آخر من الأعلى." }
+};
+let kind = store.get("kind", "mosque"), term = null;
+function renderPicker() {
+  if (!KINDS[kind]) kind = "mosque";
+  const k = KINDS[kind];
+  if (!k.terms.includes(term)) term = k.terms[0];
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-checked", b.dataset.kind === kind));
+  const box = $("terms"); box.innerHTML = "";
+  if (k.terms.length > 1) k.terms.forEach(t => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "term"; b.textContent = t;
+    b.setAttribute("aria-pressed", t === term);
+    b.onclick = () => { term = t; renderPicker(); };
+    box.appendChild(b);
+  });
+  $("kindNote").textContent = k.note;
+  $("mapsGo").textContent = "ابحث عن «" + term + "» في خرائط Google";
+  $("mapsGo").href = "https://www.google.com/maps/search/" + encodeURIComponent(term);
+}
+document.querySelectorAll(".seg button").forEach(b => b.onclick = () => { kind = b.dataset.kind; term = null; store.set("kind", kind); renderPicker(); });
 
 /* ===== nearby mosques (OpenStreetMap / Overpass) ===== */
 const OVERPASS = [

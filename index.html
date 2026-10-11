@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 <div class="wrap">
@@ -43,11 +43,17 @@
 
   <section>
     <div class="sec-head"><h2>أقرب المساجد</h2><button class="link" id="refreshBtn" type="button">تحديث</button></div>
-    <div class="btns">
-      <a class="btn solid" id="googleLink" target="_blank" rel="noopener">أقرب المساجد</a>
-      <a class="btn" id="womenLink" target="_blank" rel="noopener">مصليات النساء</a>
+    <div class="picker">
+      <div class="picker-q">ماذا تبحث عنه في خرائط Google؟</div>
+      <div class="seg" role="radiogroup" aria-label="نوع المكان">
+        <button type="button" role="radio" data-kind="mosque" aria-checked="true">مسجد</button>
+        <button type="button" role="radio" data-kind="musalla" aria-checked="false">مصلى</button>
+        <button type="button" role="radio" data-kind="women" aria-checked="false">مصلى نساء</button>
+      </div>
+      <div class="terms" id="terms"></div>
+      <a class="btn solid" id="mapsGo" target="_blank" rel="noopener">افتح خرائط Google</a>
+      <p class="note" id="kindNote"></p>
     </div>
-    <p class="note">يفتح خرائط Google على موقعك الحالي. تأكد أن خدمات الموقع مفعّلة لها.</p>
     <button class="btn" id="locateBtn" type="button" style="margin-top:4px">حدّد موقعي</button>
     <div id="mosqueStatus" class="note"></div>
     <ol class="mosques" id="mosqueList"></ol>
@@ -102,8 +108,8 @@
     </div>
   </section>
 
-  <footer class="note">بيانات المساجد من OpenStreetMap · الإصدار 7. إن لم يظهر مسجدك فأضفه من «مسجد جديد».</footer>
+  <footer class="note">بيانات المساجد من OpenStreetMap · الإصدار 8. إن لم يظهر مسجدك فأضفه من «مسجد جديد».</footer>
 </div>
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>
