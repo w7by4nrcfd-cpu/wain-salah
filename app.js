@@ -115,8 +115,7 @@ function renderPlace() { $("placeName").textContent = place.name; renderQibla();
    otherwise the Maps app uses the phone's own location. */
 function setMapLinks() {
   // Same links as the first version: no coordinates, so the Maps app searches from the phone's GPS
-  $("appleLink").href = "https://maps.apple.com/?q=" + encodeURIComponent("مسجد");
-  $("googleLink").href = "https://www.google.com/maps/search/" + encodeURIComponent("مسجد قريب مني");
+  $("googleLink").href = "https://www.google.com/maps/search/" + encodeURIComponent("مسجد");
 }
 
 function locate() {
@@ -192,7 +191,7 @@ async function loadMosques(force) {
     shown = 8; renderMosques();
   } catch (e) {
     $("mosqueStatus").innerHTML = (cache ? "خادم المساجد لا يستجيب، أعرض آخر نتائج محفوظة. " : "خادم المساجد لا يستجيب الآن. اضغط «تحديث» بعد قليل، أو ")
-      + `<a href="https://maps.apple.com/?q=${encodeURIComponent("مسجد")}" target="_blank" rel="noopener">ابحث في خرائط آبل</a>.`;
+      + `<a href="https://www.google.com/maps/search/${encodeURIComponent("مسجد")}" target="_blank" rel="noopener">ابحث في خرائط Google</a>.`;
     if (cache) { nearby = cache.list; renderMosques(true); }
   }
 }
