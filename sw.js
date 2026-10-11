@@ -1,6 +1,6 @@
 // App shell cached for offline use; mosque and place lookups always go to the network.
-const VERSION = "ws-v22";
-const SHELL = ["./", "index.html", "style.css?v=22", "app.js?v=22", "manifest.webmanifest",
+const VERSION = "ws-v23";
+const SHELL = ["./", "index.html", "style.css?v=23", "app.js?v=23", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
