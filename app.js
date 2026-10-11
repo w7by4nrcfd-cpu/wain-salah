@@ -94,7 +94,7 @@ function renderPrayer() {
   if (!day || !day.key.startsWith(`${n.getUTCFullYear()}-${n.getUTCMonth() + 1}-${n.getUTCDate()}-`)) computeDay();
   const now = n.getUTCHours() + n.getUTCMinutes() / 60 + n.getUTCSeconds() / 3600;
   const off = DEFAULT_OFF;
-  const ni = day.t.findIndex((x, i) => i !== 1 && x > now);
+  const ni = day.t.findIndex(x => x > now); // includes sunrise (index 1) as the next event after Fajr
   const names = NAMES.slice(); if (day.friday) names[2] = "الجمعة";
   const ceilMin = h => Math.ceil(h * 60 - 1e-9) / 60; // count to the minute that is shown
   // For 30 minutes after each adhan, show the time elapsed since it (counting up), then move to the next prayer
@@ -117,8 +117,16 @@ function renderPrayer() {
     $("heroLbl").textContent = "الصلاة القادمة";
     $("nextName").textContent = names[idx];
     $("countdown").textContent = [left / 3600 | 0, (left % 3600) / 60 | 0, left % 60].map(v => String(v).padStart(2, "0")).join(":");
-    $("heroSub").textContent = "الأذان " + hm(target);
-    $("nextIqama").textContent = "الإقامة تقريباً " + hm(target + off[OFF_IDX[idx]] / 60);
+    if (idx === 1) { // sunrise: no adhan or iqama, it ends the time of Fajr
+      $("heroLbl").textContent = "القادم";
+      $("heroSub").textContent = "الشروق " + hm(day.t[1], true);
+      $("nextIqama").textContent = "ينتهي وقت صلاة الفجر بالشروق";
+      const tl = Math.max(0, Math.round((day.t[1] - now) * 3600));
+      $("countdown").textContent = [tl / 3600 | 0, (tl % 3600) / 60 | 0, tl % 60].map(v => String(v).padStart(2, "0")).join(":");
+    } else {
+      $("heroSub").textContent = "الأذان " + hm(target);
+      $("nextIqama").textContent = "الإقامة تقريباً " + hm(target + off[OFF_IDX[idx]] / 60);
+    }
   }
   $("hijri").textContent = day.hijri; $("greg").textContent = day.greg;
 
