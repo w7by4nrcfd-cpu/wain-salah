@@ -11,7 +11,7 @@ const fix = (a, b) => { a = a - b * Math.floor(a / b); return a < 0 ? a + b : a;
 const NAMES = ["الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء"];
 const DEFAULT_OFF = [25, 20, 20, 10, 20];
 const OFF_IDX = [0, null, 1, 2, 3, 4];
-const FALLBACK = { name: "لم يُحدَّد بعد", lat: 21.4225, lng: 39.8262, approx: true };
+const FALLBACK = { name: "مكة المكرمة (حدّد موقعك لمواقيت مكانك)", lat: 21.4225, lng: 39.8262, approx: true };
 
 let place = store.get("place", FALLBACK);
 if (place.approx || place.manual) place = FALLBACK; // never show a made-up town as the user's location
@@ -31,16 +31,23 @@ function sun(jd) {
   let eqt = q / 15 - RA; eqt -= 24 * Math.round(eqt / 24);
   return { decl: deg(Math.asin(Math.sin(rad(e)) * Math.sin(rad(L)))), eqt };
 }
+/* Each time is refined with the sun's position at that moment (two passes), as in PrayTimes */
 function prayerTimes(y, m, d, lat, lng, ramadan) {
-  const s = sun(julian(y, m, d) - lng / 360 + .5), dec = s.decl;
-  const noon = 12 + 3 - lng / 15 - s.eqt;
-  const T = a => deg(Math.acos((-Math.sin(rad(a)) - Math.sin(rad(dec)) * Math.sin(rad(lat))) / (Math.cos(rad(dec)) * Math.cos(rad(lat))))) / 15;
-  const asrAngle = -deg(Math.atan(1 / (1 + Math.tan(rad(Math.abs(lat - dec))))));
-  const maghrib = noon + T(.833);
-  return [noon - T(18.5), noon - T(.833), noon + 2 / 60, noon + T(asrAngle), maghrib, maghrib + (ramadan ? 2 : 1.5)];
+  const jd0 = julian(y, m, d) - lng / 360;
+  const at = h => sun(jd0 + (h - 3) / 24 + lng / 360); // h is local Saudi clock time
+  const noonAt = h => { const s = at(h); return { s, noon: 12 + 3 - lng / 15 - s.eqt }; };
+  const T = (a, dec) => deg(Math.acos((-Math.sin(rad(a)) - Math.sin(rad(dec)) * Math.sin(rad(lat))) / (Math.cos(rad(dec)) * Math.cos(rad(lat))))) / 15;
+  const asrA = dec => -deg(Math.atan(1 / (1 + Math.tan(rad(Math.abs(lat - dec))))));
+  let t = [5, 6, 12, 15, 18];
+  for (let pass = 0; pass < 2; pass++) {
+    const f = noonAt(t[0]), r = noonAt(t[1]), z = noonAt(t[2]), a = noonAt(t[3]), g = noonAt(t[4]);
+    t = [f.noon - T(18.5, f.s.decl), r.noon - T(.833, r.s.decl), z.noon, a.noon + T(asrA(a.s.decl), a.s.decl), g.noon + T(.833, g.s.decl)];
+  }
+  // one-minute precaution on Dhuhr and Asr so a prayer is never shown before its time
+  return [t[0], t[1], t[2] + 1 / 60, t[3] + 1 / 60, t[4], t[4] + (ramadan ? 2 : 1.5)];
 }
-function hm(h) {
-  h = fix(h, 24); let H = Math.floor(h), M = Math.round((h - H) * 60);
+function hm(h, down) {
+  h = fix(h, 24); let H = Math.floor(h), M = (down ? Math.floor : Math.ceil)((h - H) * 60 - 1e-9);
   if (M === 60) { H = (H + 1) % 24; M = 0; }
   return (H % 12 || 12) + ":" + String(M).padStart(2, "0") + " " + (H < 12 ? "ص" : "م");
 }
@@ -88,7 +95,7 @@ function renderPrayer() {
   const now = n.getUTCHours() + n.getUTCMinutes() / 60 + n.getUTCSeconds() / 3600;
   const off = DEFAULT_OFF;
   const ni = day.t.findIndex((x, i) => i !== 1 && x > now);
-  const idx = ni === -1 ? 0 : ni, target = ni === -1 ? day.fajrTomorrow : day.t[ni];
+  const idx = ni === -1 ? 0 : ni, target = Math.ceil((ni === -1 ? day.fajrTomorrow : day.t[ni]) * 60 - 1e-9) / 60; // count down to the shown minute
   const left = Math.max(0, Math.round((target - now) * 3600));
   $("countdown").textContent = [left / 3600 | 0, (left % 3600) / 60 | 0, left % 60].map(v => String(v).padStart(2, "0")).join(":");
   const names = NAMES.slice(); if (day.friday) names[2] = "الجمعة";
@@ -101,7 +108,7 @@ function renderPrayer() {
   day.t.forEach((x, i) => {
     const cls = ni === -1 || i < ni ? " past" : i === ni ? " next" : "";
     const iq = OFF_IDX[i] === null ? "—" : hm(x + off[OFF_IDX[i]] / 60);
-    html += `<div class="row${cls}"><span class="p">${names[i]}</span><span class="t">${hm(x)}</span><span class="t q">${iq}</span></div>`;
+    html += `<div class="row${cls}"><span class="p">${names[i]}</span><span class="t">${hm(x, i === 1)}</span><span class="t q">${iq}</span></div>`;
   });
   if (ni === -1) html += `<div class="row next"><span class="p">فجر الغد</span><span class="t">${hm(day.fajrTomorrow)}</span><span class="t q">${hm(day.fajrTomorrow + off[0] / 60)}</span></div>`;
   if ($("table").dataset.h !== html) { $("table").innerHTML = html; $("table").dataset.h = html; }
