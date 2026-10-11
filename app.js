@@ -166,25 +166,57 @@ function renderDhikrTitle(now) {
   const recent = last != null && now - t[last] < 1;
   const fm = last === 0 || last === 4;
   const names = NAMES.slice(); if (day.friday) names[2] = "الجمعة";
-  const txt = recent ? `أذكار ما بعد صلاة ${names[last]}. اضغط على الذكر لتعدّه.` : "اضغط على الذكر لتعدّه.";
+  const txt = recent ? `بعد صلاة ${names[last]}` : "اضغط الذكر لتعدّه";
   if ($("dhikrFor").textContent !== txt) $("dhikrFor").textContent = txt;
   const hint = recent ? `بعد صلاة ${names[last]}` : "من حصن المسلم، مع عدّاد";
   if ($("dhikrHint").textContent !== hint) $("dhikrHint").textContent = hint;
   if (fm !== dhikrFM) { dhikrFM = fm; renderDhikr(); }
 }
+const RING = 2 * Math.PI * 17;
+function dhikrGoal(d) { return dhikrFM && d.n3 ? d.n3 : d.n; }
+/* Build the list once; each tap only updates its own card, so fast taps are never lost */
 function renderDhikr() {
   const list = $("dhikr"); list.innerHTML = "";
   DHIKR.forEach((d, i) => {
     if (d.only === "fm" && !dhikrFM) return;
-    const goal = dhikrFM && d.n3 ? d.n3 : d.n, c = Math.min(dhikrCounts[i], goal);
     const li = document.createElement("li"), b = document.createElement("button");
-    b.type = "button"; b.className = "dk" + (c >= goal ? " done" : "");
-    b.innerHTML = `<span class="dk-t"></span><span class="dk-c">${c >= goal ? "✓" : c + " / " + goal}</span>`;
-    b.querySelector(".dk-t").textContent = d.t + (d.note ? ` (${d.note})` : "");
-    b.style.setProperty("--p", (c / goal * 100) + "%");
-    b.onclick = () => { if (dhikrCounts[i] < goal) { dhikrCounts[i]++; if (navigator.vibrate) navigator.vibrate(dhikrCounts[i] === goal ? 40 : 8); renderDhikr(); } };
+    b.type = "button"; b.className = "dk"; b.dataset.i = i;
+    b.innerHTML = `<span class="dk-t"><span class="dk-x"></span><span class="dk-note"></span></span>
+      <span class="dk-ring"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" class="r-bg"/><circle cx="20" cy="20" r="17" class="r-fg"/></svg><span class="dk-n"></span></span>`;
+    b.querySelector(".dk-x").textContent = d.t;
+    b.querySelector(".dk-note").textContent = d.note || "";
+    b.addEventListener("click", () => tapDhikr(i, b));
     li.appendChild(b); list.appendChild(li);
+    paintDhikr(i, b);
   });
+  paintTotal();
+}
+function paintDhikr(i, b) {
+  const goal = dhikrGoal(DHIKR[i]), c = Math.min(dhikrCounts[i], goal), done = c >= goal;
+  b.classList.toggle("done", done);
+  b.querySelector(".r-fg").style.strokeDashoffset = RING * (1 - c / goal);
+  b.querySelector(".dk-n").textContent = done ? "✓" : (goal === 1 ? "مرة" : c + "/" + goal);
+  b.setAttribute("aria-label", `${DHIKR[i].t}، ${c} من ${goal}`);
+}
+function paintTotal() {
+  const shown = DHIKR.map((d, i) => i).filter(i => !(DHIKR[i].only === "fm" && !dhikrFM));
+  const done = shown.filter(i => dhikrCounts[i] >= dhikrGoal(DHIKR[i])).length;
+  $("dhikrTotal").textContent = done === shown.length ? "أكملت أذكار الصلاة، تقبّل الله" : `أكملت ${done} من ${shown.length}`;
+  $("dhikrBar").style.width = (done / shown.length * 100) + "%";
+}
+function tapDhikr(i, b) {
+  const goal = dhikrGoal(DHIKR[i]);
+  if (dhikrCounts[i] >= goal) return;
+  dhikrCounts[i]++;
+  const finished = dhikrCounts[i] === goal;
+  if (navigator.vibrate) navigator.vibrate(finished ? 35 : 6);
+  paintDhikr(i, b);
+  b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump");
+  if (finished) {
+    paintTotal();
+    const next = [...document.querySelectorAll(".dk:not(.done)")][0];
+    if (next) setTimeout(() => next.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
+  }
 }
 $("dhikrReset").onclick = () => { dhikrCounts = DHIKR.map(() => 0); renderDhikr(); };
 
