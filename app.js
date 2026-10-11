@@ -153,45 +153,99 @@ function renderSpecial(now) {
   setHTML($("special"), html);
 }
 
-/* ===== adhkar after prayer (Hisn al-Muslim) ===== */
-const DHIKR = [
-  { t: "أستغفر الله", n: 3 },
-  { t: "اللهم أنت السلام ومنك السلام، تباركت يا ذا الجلال والإكرام", n: 1 },
-  { t: "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير، اللهم لا مانع لما أعطيت، ولا معطي لما منعت، ولا ينفع ذا الجد منك الجد", n: 1 },
-  { t: "سبحان الله", n: 33 },
-  { t: "الحمد لله", n: 33 },
-  { t: "الله أكبر", n: 33 },
-  { t: "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير", n: 1, note: "تمام المئة" },
-  { t: "قراءة آية الكرسي", n: 1 },
-  { t: "قراءة سورة الإخلاص والفلق والناس", n: 1, n3: 3, note: "ثلاث مرات بعد الفجر والمغرب" },
-  { t: "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، يحيي ويميت، وهو على كل شيء قدير", n: 10, only: "fm", note: "بعد الفجر والمغرب" }
-];
-let dhikrCounts = DHIKR.map(() => 0), dhikrFM = false;
+/* ===== adhkar: morning, evening, after prayer (Hisn al-Muslim, authentic narrations only) ===== */
+const R = "صلى الله عليه وسلم";
+const COMMON_ME = (m) => {
+  const am = m === "morning";
+  return [
+    { t: "قراءة آية الكرسي", n: 1, src: "النسائي" },
+    { t: "قراءة سور الإخلاص والفلق والناس", n: 3, src: "أبو داود والترمذي" },
+    { t: am
+        ? "أصبحنا وأصبح الملك لله، والحمد لله، لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير، رب أسألك خير ما في هذا اليوم وخير ما بعده، وأعوذ بك من شر ما في هذا اليوم وشر ما بعده، رب أعوذ بك من الكسل وسوء الكبر، رب أعوذ بك من عذاب في النار وعذاب في القبر"
+        : "أمسينا وأمسى الملك لله، والحمد لله، لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير، رب أسألك خير ما في هذه الليلة وخير ما بعدها، وأعوذ بك من شر ما في هذه الليلة وشر ما بعدها، رب أعوذ بك من الكسل وسوء الكبر، رب أعوذ بك من عذاب في النار وعذاب في القبر",
+      n: 1, src: "مسلم" },
+    { t: am ? "اللهم بك أصبحنا، وبك أمسينا، وبك نحيا، وبك نموت، وإليك النشور"
+            : "اللهم بك أمسينا، وبك أصبحنا، وبك نحيا، وبك نموت، وإليك المصير", n: 1, src: "الترمذي" },
+    { t: "اللهم أنت ربي لا إله إلا أنت، خلقتني وأنا عبدك، وأنا على عهدك ووعدك ما استطعت، أعوذ بك من شر ما صنعت، أبوء لك بنعمتك علي، وأبوء بذنبي فاغفر لي، فإنه لا يغفر الذنوب إلا أنت", n: 1, src: "البخاري", note: "سيد الاستغفار" },
+    { t: "اللهم إني أسألك العفو والعافية في الدنيا والآخرة، اللهم إني أسألك العفو والعافية في ديني ودنياي وأهلي ومالي، اللهم استر عوراتي، وآمن روعاتي، اللهم احفظني من بين يدي، ومن خلفي، وعن يميني، وعن شمالي، ومن فوقي، وأعوذ بعظمتك أن أغتال من تحتي", n: 1, src: "أبو داود وابن ماجه" },
+    { t: "اللهم عالم الغيب والشهادة، فاطر السماوات والأرض، رب كل شيء ومليكه، أشهد أن لا إله إلا أنت، أعوذ بك من شر نفسي، ومن شر الشيطان وشركه، وأن أقترف على نفسي سوءا، أو أجره إلى مسلم", n: 1, src: "الترمذي وأبو داود" },
+    { t: "بسم الله الذي لا يضر مع اسمه شيء في الأرض ولا في السماء وهو السميع العليم", n: 3, src: "أبو داود والترمذي" },
+    { t: "اللهم عافني في بدني، اللهم عافني في سمعي، اللهم عافني في بصري، لا إله إلا أنت. اللهم إني أعوذ بك من الكفر والفقر، وأعوذ بك من عذاب القبر، لا إله إلا أنت", n: 3, src: "أبو داود" },
+    { t: "يا حي يا قيوم برحمتك أستغيث، أصلح لي شأني كله، ولا تكلني إلى نفسي طرفة عين", n: 1, src: "الحاكم" },
+    ...(am ? [] : [{ t: "أعوذ بكلمات الله التامات من شر ما خلق", n: 3, src: "مسلم" }]),
+    ...(am ? [
+      { t: "سبحان الله وبحمده عدد خلقه، ورضا نفسه، وزنة عرشه، ومداد كلماته", n: 3, src: "مسلم" },
+      { t: "اللهم إني أسألك علما نافعا، ورزقا طيبا، وعملا متقبلا", n: 1, src: "ابن ماجه" }
+    ] : []),
+    { t: "سبحان الله وبحمده", n: 100, src: "مسلم" },
+    ...(am ? [{ t: "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير", n: 100, src: "البخاري ومسلم" }] : []),
+    { t: "أستغفر الله وأتوب إليه", n: 100, src: "البخاري ومسلم" }
+  ];
+};
+const ADHKAR = {
+  morning: { title: "أذكار الصباح", when: "من الفجر حتى ارتفاع الشمس", list: COMMON_ME("morning") },
+  evening: { title: "أذكار المساء", when: "من العصر حتى المغرب", list: COMMON_ME("evening") },
+  salah: { title: "بعد الصلاة", when: "", list: [
+    { t: "أستغفر الله", n: 3, src: "مسلم" },
+    { t: "اللهم أنت السلام ومنك السلام، تباركت يا ذا الجلال والإكرام", n: 1, src: "مسلم" },
+    { t: "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير، اللهم لا مانع لما أعطيت، ولا معطي لما منعت، ولا ينفع ذا الجد منك الجد", n: 1, src: "البخاري ومسلم" },
+    { t: "سبحان الله", n: 33, src: "مسلم" },
+    { t: "الحمد لله", n: 33, src: "مسلم" },
+    { t: "الله أكبر", n: 33, src: "مسلم" },
+    { t: "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير", n: 1, src: "مسلم", note: "تمام المئة" },
+    { t: "قراءة آية الكرسي", n: 1, src: "النسائي" },
+    { t: "قراءة سور الإخلاص والفلق والناس", n: 1, n3: 3, src: "أبو داود والترمذي", note: "ثلاث مرات بعد الفجر والمغرب" },
+    { t: "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد، يحيي ويميت، وهو على كل شيء قدير", n: 10, only: "fm", src: "الترمذي", note: "بعد الفجر والمغرب" }
+  ] }
+};
+let tab = null, dhikrFM = false;
+const counts = { morning: [], evening: [], salah: [] };
+const goalOf = d => (tab === "salah" && dhikrFM && d.n3) ? d.n3 : d.n;
+const visible = () => ADHKAR[tab].list.map((d, i) => i).filter(i => !(ADHKAR[tab].list[i].only === "fm" && !dhikrFM));
+
+function lastPrayer(now) {
+  const t = day.t; const last = [0, 2, 3, 4, 5].filter(i => t[i] <= now).pop();
+  return { last, recent: last != null && now - t[last] < 1 };
+}
+function suggestTab(now) {
+  const t = day.t, { recent } = lastPrayer(now);
+  if (recent) return "salah";
+  if (now >= t[0] && now < t[2]) return "morning";
+  if (now >= t[3] && now < t[5]) return "evening";
+  return "salah";
+}
 function renderDhikrTitle(now) {
-  const t = day.t;
-  const last = [0, 2, 3, 4, 5].filter(i => t[i] <= now).pop();
-  const recent = last != null && now - t[last] < 1;
+  const { last, recent } = lastPrayer(now);
   const fm = last === 0 || last === 4;
   const names = NAMES.slice(); if (day.friday) names[2] = "الجمعة";
-  const txt = recent ? `بعد صلاة ${names[last]}` : "اضغط الذكر لتعدّه";
-  if ($("dhikrFor").textContent !== txt) $("dhikrFor").textContent = txt;
-  const hint = recent ? `بعد صلاة ${names[last]}` : "من حصن المسلم، مع عدّاد";
+  const s = suggestTab(now);
+  const hint = s === "salah" ? (recent ? `بعد صلاة ${names[last]}` : "الصباح والمساء وبعد الصلاة")
+    : s === "morning" ? "حان وقت أذكار الصباح" : "حان وقت أذكار المساء";
   if ($("dhikrHint").textContent !== hint) $("dhikrHint").textContent = hint;
-  if (fm !== dhikrFM) { dhikrFM = fm; renderDhikr(); }
+  if (fm !== dhikrFM) { dhikrFM = fm; if (tab === "salah") renderDhikr(); }
 }
+
 const RING = 2 * Math.PI * 17;
-function dhikrGoal(d) { return dhikrFM && d.n3 ? d.n3 : d.n; }
+function setTab(k) {
+  tab = k;
+  document.querySelectorAll(".dtab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === k));
+  $("dhikrWhen").textContent = ADHKAR[k].when;
+  renderDhikr();
+  $("dhikrView").querySelector(".view-body").scrollTop = 0;
+}
 /* Build the list once; each tap only updates its own card, so fast taps are never lost */
 function renderDhikr() {
+  if (!tab) return;
   const list = $("dhikr"); list.innerHTML = "";
-  DHIKR.forEach((d, i) => {
-    if (d.only === "fm" && !dhikrFM) return;
+  const L = ADHKAR[tab].list, c = counts[tab];
+  visible().forEach(i => {
+    const d = L[i]; c[i] = c[i] || 0;
     const li = document.createElement("li"), b = document.createElement("button");
-    b.type = "button"; b.className = "dk"; b.dataset.i = i;
+    b.type = "button"; b.className = "dk";
     b.innerHTML = `<span class="dk-t"><span class="dk-x"></span><span class="dk-note"></span></span>
       <span class="dk-ring"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" class="r-bg"/><circle cx="20" cy="20" r="17" class="r-fg"/></svg><span class="dk-n"></span></span>`;
     b.querySelector(".dk-x").textContent = d.t;
-    b.querySelector(".dk-note").textContent = d.note || "";
+    b.querySelector(".dk-note").textContent = [d.note, d.src && "رواه " + d.src].filter(Boolean).join(" · ");
     b.addEventListener("click", () => tapDhikr(i, b));
     li.appendChild(b); list.appendChild(li);
     paintDhikr(i, b);
@@ -199,23 +253,23 @@ function renderDhikr() {
   paintTotal();
 }
 function paintDhikr(i, b) {
-  const goal = dhikrGoal(DHIKR[i]), c = Math.min(dhikrCounts[i], goal), done = c >= goal;
+  const d = ADHKAR[tab].list[i], goal = goalOf(d), c = Math.min(counts[tab][i] || 0, goal), done = c >= goal;
   b.classList.toggle("done", done);
   b.querySelector(".r-fg").style.strokeDashoffset = RING * (1 - c / goal);
   b.querySelector(".dk-n").textContent = done ? "✓" : (goal === 1 ? "مرة" : c + "/" + goal);
-  b.setAttribute("aria-label", `${DHIKR[i].t}، ${c} من ${goal}`);
+  b.setAttribute("aria-label", `${d.t}، ${c} من ${goal}`);
 }
 function paintTotal() {
-  const shown = DHIKR.map((d, i) => i).filter(i => !(DHIKR[i].only === "fm" && !dhikrFM));
-  const done = shown.filter(i => dhikrCounts[i] >= dhikrGoal(DHIKR[i])).length;
-  $("dhikrTotal").textContent = done === shown.length ? "أكملت أذكار الصلاة، تقبّل الله" : `أكملت ${done} من ${shown.length}`;
-  $("dhikrBar").style.width = (done / shown.length * 100) + "%";
+  const v = visible(), L = ADHKAR[tab].list;
+  const done = v.filter(i => (counts[tab][i] || 0) >= goalOf(L[i])).length;
+  $("dhikrTotal").textContent = done === v.length ? "أكملت الأذكار، تقبّل الله" : `أكملت ${done} من ${v.length}`;
+  $("dhikrBar").style.width = (done / v.length * 100) + "%";
 }
 function tapDhikr(i, b) {
-  const goal = dhikrGoal(DHIKR[i]);
-  if (dhikrCounts[i] >= goal) return;
-  dhikrCounts[i]++;
-  const finished = dhikrCounts[i] === goal;
+  const goal = goalOf(ADHKAR[tab].list[i]);
+  if ((counts[tab][i] || 0) >= goal) return;
+  counts[tab][i] = (counts[tab][i] || 0) + 1;
+  const finished = counts[tab][i] === goal;
   if (navigator.vibrate) navigator.vibrate(finished ? 35 : 6);
   paintDhikr(i, b);
   b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump");
@@ -225,15 +279,18 @@ function tapDhikr(i, b) {
     if (next) setTimeout(() => next.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
   }
 }
-$("dhikrReset").onclick = () => { dhikrCounts = DHIKR.map(() => 0); renderDhikr(); };
+$("dhikrReset").onclick = () => { counts[tab] = []; renderDhikr(); };
+document.querySelectorAll(".dtab").forEach(b => b.onclick = () => setTab(b.dataset.tab));
 
 /* Adhkar open as their own screen; the phone's back gesture closes it */
 function showDhikr(open) {
   $("dhikrView").hidden = !open;
   document.body.style.overflow = open ? "hidden" : "";
-  if (open) $("dhikrView").querySelector(".view-body").scrollTop = 0;
 }
-$("openDhikr").onclick = () => { history.pushState({ v: "dhikr" }, ""); showDhikr(true); };
+$("openDhikr").onclick = () => {
+  const n = saNow(); setTab(suggestTab(n.getUTCHours() + n.getUTCMinutes() / 60));
+  history.pushState({ v: "dhikr" }, ""); showDhikr(true);
+};
 $("closeDhikr").onclick = () => history.state && history.state.v === "dhikr" ? history.back() : showDhikr(false);
 window.addEventListener("popstate", () => showDhikr(history.state && history.state.v === "dhikr"));
 
@@ -365,7 +422,7 @@ const standalone = window.matchMedia("(display-mode: standalone)").matches || na
 if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !standalone && !store.get("hideInstall", false)) $("installHint").hidden = false;
 $("installClose").onclick = () => { $("installHint").hidden = true; store.set("hideInstall", true); };
 
-buildTicks(); renderPlace(); renderPrayer(); renderDhikr();
+buildTicks(); renderPlace(); renderPrayer();
 setInterval(renderPrayer, 1000);
 // Ask for the real location straight away; until then times are only a placeholder
 locate();

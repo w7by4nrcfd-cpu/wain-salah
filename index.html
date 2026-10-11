@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;600;700&family=Readex+Pro:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="style.css?v=24">
+<link rel="stylesheet" href="style.css?v=25">
 </head>
 <body>
 <div class="wrap">
@@ -72,7 +72,7 @@
   </section>
 
   <button class="entry" id="openDhikr" type="button">
-    <span><b>أذكار بعد الصلاة</b><span class="entry-s" id="dhikrHint">من حصن المسلم، مع عدّاد</span></span>
+    <span><b>الأذكار</b><span class="entry-s" id="dhikrHint">الصباح والمساء وبعد الصلاة</span></span>
     <span class="entry-arrow" aria-hidden="true">‹</span>
   </button>
 
@@ -101,20 +101,25 @@
   </section>
 
 
-  <footer class="note">حدّد موقعك لتُضبط المواقيت والقبلة على مكانك بدقة · الإصدار 24</footer>
+  <footer class="note">حدّد موقعك لتُضبط المواقيت والقبلة على مكانك بدقة · الإصدار 25</footer>
 </div>
 <div class="view" id="dhikrView" hidden>
   <div class="view-bar">
     <button class="link back" id="closeDhikr" type="button">› رجوع</button>
-    <b>أذكار بعد الصلاة</b>
+    <b>الأذكار</b>
     <button class="link" id="dhikrReset" type="button">إعادة العد</button>
   </div>
+  <div class="dtabs" role="tablist">
+    <button class="dtab" role="tab" data-tab="morning" type="button">الصباح</button>
+    <button class="dtab" role="tab" data-tab="evening" type="button">المساء</button>
+    <button class="dtab" role="tab" data-tab="salah" type="button">بعد الصلاة</button>
+  </div>
   <div class="view-body">
-    <div class="dk-total"><div class="dk-total-row"><span id="dhikrTotal">—</span><span class="note" id="dhikrFor"></span></div><div class="dk-track"><div class="dk-bar" id="dhikrBar"></div></div></div>
+    <div class="dk-total"><div class="dk-total-row"><span id="dhikrTotal">—</span><span class="note" id="dhikrWhen"></span></div><div class="dk-track"><div class="dk-bar" id="dhikrBar"></div></div></div>
     <ol class="dhikr" id="dhikr"></ol>
-    <p class="note">المصدر: حصن المسلم.</p>
+    <p class="note">من كتاب حصن المسلم، مع ذكر من رواه تحت كل ذكر.</p>
   </div>
 </div>
-<script src="app.js?v=24"></script>
+<script src="app.js?v=25"></script>
 </body>
 </html>

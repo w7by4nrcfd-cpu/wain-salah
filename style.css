@@ -149,3 +149,8 @@ footer{text-align:center}
 .view-bar .back{justify-self:start}
 .view-bar #dhikrReset{justify-self:end}
 .view-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(env(safe-area-inset-bottom,0px) + 24px);display:flex;flex-direction:column;gap:10px;max-width:520px;width:100%;margin:0 auto}
+
+.dtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
+.dtab{font:inherit;font-size:14px;font-weight:600;border:0;border-radius:10px;padding:9px 4px;background:transparent;color:var(--muted);cursor:pointer;touch-action:manipulation}
+.dtab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.dtab:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
