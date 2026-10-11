@@ -108,7 +108,9 @@ function renderPrayer() {
 }
 
 /* ===== location ===== */
-function renderPlace() { $("placeName").textContent = place.name; renderQibla(); setMapLinks(); }
+function renderPlace() {
+  $("placeName").textContent = place.name;
+  $("coords").textContent = place.approx ? "" : `(${place.lat.toFixed(4)}، ${place.lng.toFixed(4)})`; renderQibla(); setMapLinks(); }
 
 /* Nearest mosques in Apple / Google Maps: centred on the GPS fix when we have one,
    otherwise the Maps app uses the phone's own location. */
@@ -145,16 +147,15 @@ async function placeName(lat, lng) {
   const uniq = arr => arr.filter((v, i) => v && arr.indexOf(v) === i);
   const sources = [
     async () => {
-      const j = await withTimeout(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ar`, 8000);
-      const admin = (j.localityInfo && j.localityInfo.administrative) || [];
-      const fine = admin.filter(x => x.adminLevel >= 6).map(x => x.name).reverse();
-      return uniq([j.locality, ...fine, j.city]).slice(0, 2);
-    },
-    async () => {
       const j = await withTimeout(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&accept-language=ar`, 8000);
       const a = j.address || {};
-      return uniq([a.neighbourhood || a.suburb || a.quarter || a.village || a.hamlet || a.isolated_dwelling,
-        a.village || a.town || a.city || a.municipality || a.county || a.state_district || a.state]).slice(0, 2);
+      const local = a.hamlet || a.village || a.neighbourhood || a.suburb || a.quarter || a.isolated_dwelling || a.town || a.city;
+      const wider = a.county || a.state_district || a.municipality || a.state;
+      return local ? uniq([local, wider]) : [];
+    },
+    async () => {
+      const j = await withTimeout(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ar`, 8000);
+      return j.locality ? uniq(["قرب " + j.locality, j.city]) : [];
     }
   ];
   for (const src of sources) {
@@ -163,9 +164,40 @@ async function placeName(lat, lng) {
       if (parts.length) { place.name = parts.join("، "); store.set("place", place); renderPlace(); return; }
     } catch (e) {}
   }
-  place.name = `موقعك (${lat.toFixed(3)}، ${lng.toFixed(3)})`; store.set("place", place); renderPlace();
+  place.name = "موقعك الحالي (بدون اسم في الخرائط)"; store.set("place", place); renderPlace();
 }
 
+
+/* ===== manual place search (any city or village in Saudi Arabia) ===== */
+async function searchPlace() {
+  const q = $("placeQ").value.trim(), box = $("placeResults");
+  if (!q) { $("placeQ").focus(); return; }
+  box.innerHTML = '<li class="note">جارٍ البحث…</li>';
+  try {
+    const list = await withTimeout(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=sa&limit=8&accept-language=ar&addressdetails=1&q=${encodeURIComponent(q)}`, 10000);
+    box.innerHTML = "";
+    if (!list.length) { box.innerHTML = '<li class="note">لم نجد هذا الاسم. جرّب كتابته بطريقة أخرى أو اسم أقرب مدينة.</li>'; return; }
+    list.forEach(r => {
+      const ad = r.address || {};
+      const name = r.name || r.display_name.split(",")[0];
+      const area = [ad.county || ad.state_district, ad.state].filter(Boolean).filter(x => x !== name).join("، ");
+      const li = document.createElement("li"), b = document.createElement("button");
+      b.type = "button"; b.className = "res";
+      b.innerHTML = '<b></b><span></span>';
+      b.querySelector("b").textContent = name; b.querySelector("span").textContent = area;
+      b.onclick = () => {
+        place = { name, lat: +r.lat, lng: +r.lon, manual: true };
+        store.set("place", place); store.set("located", false);
+        box.innerHTML = ""; $("placeQ").value = ""; setStatus("");
+        $("locateBtn").textContent = "حدّد موقعي";
+        day = null; renderPlace(); renderPrayer();
+      };
+      li.appendChild(b); box.appendChild(li);
+    });
+  } catch (e) { box.innerHTML = '<li class="note">تعذّر البحث، تحقق من الإنترنت.</li>'; }
+}
+$("placeGo").onclick = searchPlace;
+$("placeQ").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); searchPlace(); } });
 
 /* ===== Google Maps picker: choose what to search before leaving the site ===== */
 const KINDS = {
@@ -271,7 +303,7 @@ $("installClose").onclick = () => { $("installHint").hidden = true; store.set("h
 buildTicks(); renderPlace(); renderMine(); renderPrayer();
 setInterval(renderPrayer, 1000);
 // Ask for the real location straight away; until then times are only a placeholder
-locate();
+if (!place.manual) locate();
 if (place.approx) setStatus("اسمح بالوصول لموقعك حتى تُحسب المواقيت لمكانك.");
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));

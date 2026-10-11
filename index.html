@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
 <div class="wrap">
@@ -33,8 +33,13 @@
   </div>
 
   <div class="placebar">
-    <div class="pb-text"><span class="pb-lbl">موقعك</span><span id="placeName">—</span></div>
+    <div class="pb-text"><span class="pb-lbl">موقعك <span id="coords"></span></span><span id="placeName">—</span></div>
     <button class="pb-btn" id="locateBtn" type="button">حدّد موقعي</button>
+  </div>
+  <div class="search">
+    <label for="placeQ" class="note">أو ابحث عن مدينتك أو قريتك:</label>
+    <div class="search-row"><input id="placeQ" type="search" placeholder="مثال: الحرجة، تمنية، أحد رفيدة" autocomplete="off"><button class="pb-btn" id="placeGo" type="button">بحث</button></div>
+    <ul class="results" id="placeResults"></ul>
   </div>
   <div class="note" id="mosqueStatus"></div>
 
@@ -106,8 +111,8 @@
     </div>
   </section>
 
-  <footer class="note">حدّد موقعك لتُضبط المواقيت والقبلة على مكانك بدقة · الإصدار 15</footer>
+  <footer class="note">حدّد موقعك لتُضبط المواقيت والقبلة على مكانك بدقة · الإصدار 16</footer>
 </div>
-<script src="app.js?v=15"></script>
+<script src="app.js?v=16"></script>
 </body>
 </html>

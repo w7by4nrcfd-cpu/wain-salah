@@ -28,6 +28,15 @@ header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;
 .pb-btn:disabled{opacity:.7}
 .pb-btn:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 #mosqueStatus:empty{display:none}
+.search{display:flex;flex-direction:column;gap:6px}
+.search-row{display:flex;gap:8px}
+.search-row input{flex:1}
+.results{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.results:empty{display:none}
+.res{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:9px 12px}
+.res span{font-size:12px;color:var(--muted)}
+.res:focus-visible{outline:2px solid var(--brass)}
+#coords{font-variant-numeric:tabular-nums}
 .install{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--brass-soft);border-radius:12px;padding:10px 14px;font-size:13px}
 .x{all:unset;cursor:pointer;padding:2px 6px;color:var(--muted)}
 .hero{background:var(--accent);color:var(--accent-ink);border-radius:50% 50% 22px 22px / 110px 110px 22px 22px;padding:58px 22px 24px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
