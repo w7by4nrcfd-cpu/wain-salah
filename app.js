@@ -11,9 +11,10 @@ const fix = (a, b) => { a = a - b * Math.floor(a / b); return a < 0 ? a + b : a;
 const NAMES = ["الفجر", "الشروق", "الظهر", "العصر", "المغرب", "العشاء"];
 const DEFAULT_OFF = [25, 20, 20, 10, 20];
 const OFF_IDX = [0, null, 1, 2, 3, 4];
-const FALLBACK = { name: "سراة عبيدة (تقريبي)", lat: 18.16, lng: 43.12, approx: true };
+const FALLBACK = { name: "لم يُحدَّد بعد", lat: 21.4225, lng: 39.8262, approx: true };
 
 let place = store.get("place", FALLBACK);
+if (place.approx) place = FALLBACK; // never show a made-up town as the user's location
 let mine = store.get("mine", []);
 let selected = store.get("sel", null);
 let editing = selected;
@@ -269,6 +270,8 @@ $("installClose").onclick = () => { $("installHint").hidden = true; store.set("h
 
 buildTicks(); renderPlace(); renderMine(); renderPrayer();
 setInterval(renderPrayer, 1000);
-if (store.get("located", false)) locate();
+// Ask for the real location straight away; until then times are only a placeholder
+locate();
+if (place.approx) setStatus("اسمح بالوصول لموقعك حتى تُحسب المواقيت لمكانك.");
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
