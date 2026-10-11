@@ -134,13 +134,35 @@ function locate() {
   }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
 }
 
+/* Name of the place: two free sources, so villages anywhere still get a name */
+async function withTimeout(url, ms) {
+  const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
+  try { const r = await fetch(url, { signal: c.signal }); if (!r.ok) throw 0; return await r.json(); }
+  finally { clearTimeout(t); }
+}
 async function placeName(lat, lng) {
-  try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&accept-language=ar`);
-    const j = await r.json(), a = j.address || {};
-    const parts = [a.suburb || a.neighbourhood || a.village || a.hamlet, a.city || a.town || a.county].filter(Boolean);
-    if (parts.length) { place.name = parts.join("، "); store.set("place", place); renderPlace(); }
-  } catch (e) {}
+  const uniq = arr => arr.filter((v, i) => v && arr.indexOf(v) === i);
+  const sources = [
+    async () => {
+      const j = await withTimeout(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ar`, 8000);
+      const admin = (j.localityInfo && j.localityInfo.administrative) || [];
+      const fine = admin.filter(x => x.adminLevel >= 6).map(x => x.name).reverse();
+      return uniq([j.locality, ...fine, j.city]).slice(0, 2);
+    },
+    async () => {
+      const j = await withTimeout(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&accept-language=ar`, 8000);
+      const a = j.address || {};
+      return uniq([a.neighbourhood || a.suburb || a.quarter || a.village || a.hamlet || a.isolated_dwelling,
+        a.village || a.town || a.city || a.municipality || a.county || a.state_district || a.state]).slice(0, 2);
+    }
+  ];
+  for (const src of sources) {
+    try {
+      const parts = await src();
+      if (parts.length) { place.name = parts.join("، "); store.set("place", place); renderPlace(); return; }
+    } catch (e) {}
+  }
+  place.name = `موقعك (${lat.toFixed(3)}، ${lng.toFixed(3)})`; store.set("place", place); renderPlace();
 }
 
 
