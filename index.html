@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>وين الصلاة</title>
+<meta name="description" content="مواقيت الصلاة بتقويم أم القرى، وأقرب المساجد إليك، واتجاه القبلة.">
+<meta name="theme-color" content="#1F5F4E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="وين الصلاة">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 class="brand">وين الصلاة</h1>
+      <div class="place-chip"><span id="placeName">—</span></div>
+    </div>
+    <div class="dates"><b id="hijri">—</b><br><span id="greg">—</span></div>
+  </header>
+
+  <div class="install" id="installHint" hidden>
+    <span>ثبّته كتطبيق: اضغط زر المشاركة ثم «إضافة إلى الشاشة الرئيسية».</span>
+    <button class="x" id="installClose" type="button" aria-label="إغلاق">✕</button>
+  </div>
+
+  <div class="hero" aria-live="polite">
+    <div class="lbl">الصلاة القادمة</div>
+    <div class="name" id="nextName">—</div>
+    <div class="count" id="countdown">--:--:--</div>
+    <div class="sub">الأذان <span id="nextAdhan">—</span></div>
+    <div class="iq" id="nextIqama">الإقامة —</div>
+  </div>
+
+  <section>
+    <div class="sec-head"><h2>أقرب المساجد</h2><button class="link" id="refreshBtn" type="button">تحديث</button></div>
+    <button class="btn solid" id="locateBtn" type="button">حدّد موقعي</button>
+    <div id="mosqueStatus" class="note"></div>
+    <ol class="mosques" id="mosqueList"></ol>
+    <button class="btn" id="moreBtn" type="button" hidden>عرض المزيد</button>
+  </section>
+
+  <section>
+    <h2>مواقيت اليوم</h2>
+    <div class="table" id="table"></div>
+    <p class="note">حسب تقويم أم القرى. الإقامة لمسجد: <b id="iqMosque">—</b></p>
+  </section>
+
+  <section>
+    <h2>اتجاه القبلة</h2>
+    <div class="card qibla">
+      <svg viewBox="0 0 160 160" id="dial" aria-hidden="true">
+        <g id="rose">
+          <circle cx="80" cy="80" r="74" fill="var(--bg)" stroke="var(--line)" stroke-width="2"/>
+          <g id="ticks"></g>
+          <text x="80" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="var(--accent)">ش</text>
+          <text x="80" y="146" text-anchor="middle" font-size="12" fill="var(--muted)">ج</text>
+          <text x="142" y="84" text-anchor="middle" font-size="12" fill="var(--muted)">شر</text>
+          <text x="18" y="84" text-anchor="middle" font-size="12" fill="var(--muted)">غ</text>
+          <g id="needle"><line x1="80" y1="80" x2="80" y2="26" stroke="var(--brass)" stroke-width="5" stroke-linecap="round"/><rect x="71" y="16" width="18" height="18" rx="3" fill="var(--ink)"/></g>
+        </g>
+        <path d="M80 2 l7 10 h-14z" fill="var(--accent)"/>
+        <circle cx="80" cy="80" r="6" fill="var(--accent)"/>
+      </svg>
+      <div class="qtext">
+        <div class="deg" id="qDeg">—°</div>
+        <div id="qState" class="note">زاوية الكعبة من الشمال.</div>
+        <button class="btn" id="compassBtn" type="button">تشغيل البوصلة</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>مسجدي وأوقات إقامته</h2>
+    <div class="chips" id="myChips"></div>
+    <div class="card">
+      <div class="mrow"><strong id="formTitle">أضف مسجداً</strong><button class="link" id="delMosque" type="button" hidden>حذف</button></div>
+      <div class="form">
+        <label class="full">اسم المسجد<input id="mName" placeholder="مثال: جامع الحي"></label>
+        <label>الفجر<input id="o0" type="number" inputmode="numeric" min="0" max="90"></label>
+        <label>الظهر<input id="o1" type="number" inputmode="numeric" min="0" max="90"></label>
+        <label>العصر<input id="o2" type="number" inputmode="numeric" min="0" max="90"></label>
+        <label>المغرب<input id="o3" type="number" inputmode="numeric" min="0" max="90"></label>
+        <label>العشاء<input id="o4" type="number" inputmode="numeric" min="0" max="90"></label>
+      </div>
+      <p class="note">الأرقام بالدقائق بعد الأذان. تُحفظ على جوالك.</p>
+      <div class="btns"><button class="btn solid" id="saveMosque" type="button">حفظ</button><button class="btn" id="newMosque" type="button">مسجد جديد</button></div>
+    </div>
+  </section>
+
+  <footer class="note">بيانات المساجد من OpenStreetMap. إن لم يظهر مسجدك فأضفه من «مسجد جديد».</footer>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
